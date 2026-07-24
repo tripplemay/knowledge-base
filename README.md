@@ -12,6 +12,9 @@
 # 摄取一份新文档（解析→术语表→中文翻译→双语对照）
 cd ~/project/KnowledgeBase
 _kb/.venv/bin/python _kb/scripts/ingest.py <文件.pdf> --domain ai-engineering
+
+# PDF 追加生成保版式中文/双语 PDF（zh.pdf + dual.pdf）
+_kb/.venv/bin/python _kb/scripts/layout_translate.py domains/ai-engineering/sources/<文档目录>
 ```
 
 产物在 `domains/<域>/sources/<日期-slug>/`：

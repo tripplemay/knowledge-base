@@ -24,4 +24,5 @@
 
 1. 将文件放入 `domains/<域>/inbox/`
 2. 运行 `_kb/scripts/ingest.py <文件> --domain <域>`（解析→术语表→分块翻译→双语拼接→meta）
-3. 检查产物后 git commit
+3. PDF 文档追加运行 `_kb/scripts/layout_translate.py <文档目录>`（保版式 zh.pdf + dual.pdf，依赖 `uv tool install pdf2zh-next`）
+4. 检查产物后 git commit
