@@ -23,6 +23,9 @@ export interface KbDocSummary {
 
 export type KbDocVariant = 'zh' | 'bilingual' | 'en';
 
+/** 阅读器视图：文本三档 + PDF 原件 */
+export type KbReaderView = KbDocVariant | 'pdf';
+
 export interface KbDocContent {
   meta: KbDocSummary;
   variant: KbDocVariant;

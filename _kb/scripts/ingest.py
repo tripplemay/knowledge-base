@@ -207,11 +207,25 @@ def extract_terms(gw: Gateway, model: str, markdown: str) -> Tuple[str, List[Dic
     return "", []
 
 
+STRUCTURE_HINT = (
+    "\n## 结构还原（重要）\n"
+    "输入是从 PDF 提取的无结构纯文本（原始排版已丢失）。请在忠实原文内容的前提下，"
+    "根据语义推断并输出结构良好的 Markdown：合理的标题层级（#/##/###）、列表、表格、粗体强调。\n"
+    "- 标题必须来自内容语义（章节名、趋势名、小节主题），绝不允许把数字当标题。\n"
+    "- 孤立的数字行是页码：直接删除，不保留。页眉/页脚的重复短语也删除。\n"
+    "- 因换行被打断的句子要合并成完整段落；目录页整理为列表。\n"
+    "- 除页码与页眉页脚噪音外，不得发明、删减或改写任何内容，只做结构标注。\n"
+)
+
+
 def translate_chunks(gw: Gateway, model: str, chunks: List[str], summary: str,
-                     glossary: List[Dict[str, str]], tail_chars: int) -> List[str]:
+                     glossary: List[Dict[str, str]], tail_chars: int,
+                     infer_structure: bool = False) -> List[str]:
     glossary_text = "\n".join(f"- {g['en']} → {g['zh']}" for g in glossary) or "（无）"
     system = (
-        f"{TRANSLATE_SYSTEM}\n## 全文摘要（供理解上下文）\n{summary}\n"
+        f"{TRANSLATE_SYSTEM}"
+        f"{STRUCTURE_HINT if infer_structure else ''}"
+        f"\n## 全文摘要（供理解上下文）\n{summary}\n"
         f"\n## 术语表\n{glossary_text}"
     )
     results: List[str] = []
@@ -291,6 +305,7 @@ def main() -> None:
     translations = translate_chunks(
         gw, config["models"]["translation"], chunks, summary, glossary,
         tcfg["context_tail_chars"],
+        infer_structure=(parser == "pymupdf-plain"),
     )
 
     print("[4/4] 写入产物 …")

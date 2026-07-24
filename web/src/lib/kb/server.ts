@@ -140,6 +140,19 @@ export function getDocContent(
   };
 }
 
+export function getSourceFile(
+  domain: string,
+  slug: string,
+): { path: string; filename: string } {
+  assertDomain(domain);
+  const docDir = assertDoc(domain, slug);
+  const entry = fs
+    .readdirSync(docDir)
+    .find((f) => f.startsWith('source.') && f.endsWith('.pdf'));
+  if (!entry) throw new Error(`没有 PDF 原件: ${domain}/${slug}`);
+  return { path: path.join(docDir, entry), filename: entry };
+}
+
 export function searchKb(query: string, domain?: string): KbSearchHit[] {
   const q = query.trim().toLowerCase();
   if (q.length < 2) return [];

@@ -1,22 +1,23 @@
-// 阅读语言切换 —— 逐类复刻模板 course-page CourseInfo 的 tab 实现
+// 阅读视图切换 —— 逐类复刻模板 course-page CourseInfo 的 tab 实现
 // （非激活项用同宽白色底边占位，避免切换时内容跳动；激活项 brand 底边）
-import type { KbDocVariant } from 'types/kb';
+import type { KbReaderView } from 'types/kb';
 
-const LABELS: Record<KbDocVariant, string> = {
+const LABELS: Record<KbReaderView, string> = {
   zh: '中文全文',
   bilingual: '双语对照',
-  en: '英文原文',
+  en: '英文提取文本',
+  pdf: 'PDF 原件',
 };
 
 function LangTabs(props: {
-  variants: KbDocVariant[];
-  active: KbDocVariant;
-  onChange: (v: KbDocVariant) => void;
+  views: KbReaderView[];
+  active: KbReaderView;
+  onChange: (v: KbReaderView) => void;
 }) {
-  const { variants, active, onChange } = props;
+  const { views, active, onChange } = props;
   return (
     <div className="mb-4 flex w-full items-center gap-8">
-      {variants.map((v) => (
+      {views.map((v) => (
         <div
           key={v}
           className={
