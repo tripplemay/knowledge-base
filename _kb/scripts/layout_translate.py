@@ -54,6 +54,7 @@ def translate(doc_dir: Path, env: dict) -> None:
         "--openai-api-key", env["AIGC_GATEWAY_API_KEY"],
         "--lang-in", "en", "--lang-out", "zh-CN",
         "--watermark-output-mode", "no_watermark",
+        "--primary-font-family", "sans-serif",
         "--qps", "4",
         "--output", str(doc_dir),
     ]

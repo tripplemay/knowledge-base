@@ -26,8 +26,13 @@ export type KbDocVariant = 'zh' | 'bilingual' | 'en';
 /** 文档目录下可用的 PDF 产物：原件 / 保版式中文 / 保版式双语 */
 export type KbPdfKind = 'source' | 'zh' | 'dual';
 
-/** 阅读器视图：文本三档 + PDF 三档 */
-export type KbReaderView = KbDocVariant | 'pdf' | 'zhpdf' | 'dualpdf';
+/** 阅读器视图：文本三档 + PDF 三档 + 对照阅读 */
+export type KbReaderView =
+  | KbDocVariant
+  | 'pdf'
+  | 'zhpdf'
+  | 'dualpdf'
+  | 'compare';
 
 export interface KbDocContent {
   meta: KbDocSummary;
@@ -35,6 +40,12 @@ export interface KbDocContent {
   markdown: string;
   variants: KbDocVariant[];
   pdfs: KbPdfKind[];
+  hasPages: boolean;
+}
+
+export interface KbPageZh {
+  page: number;
+  zh: string;
 }
 
 export interface KbSearchHit {

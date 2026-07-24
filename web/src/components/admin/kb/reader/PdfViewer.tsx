@@ -15,8 +15,11 @@ pdfjs.GlobalWorkerOptions.workerSrc = new URL(
 const OVERSCAN = 2; // 视口外预渲染页数
 const ZOOM_STEPS = [0.75, 1, 1.25, 1.5, 2];
 
-function PdfViewer(props: { url: string }) {
-  const { url } = props;
+function PdfViewer(props: {
+  url: string;
+  onPageChange?: (page: number) => void;
+}) {
+  const { url, onPageChange } = props;
   const containerRef = useRef<HTMLDivElement>(null);
   const [numPages, setNumPages] = useState(0);
   const [aspect, setAspect] = useState(1.414); // 高/宽，默认 A4
@@ -60,7 +63,26 @@ function PdfViewer(props: { url: string }) {
       { root: el, rootMargin: '100% 0px' },
     );
     el.querySelectorAll('[data-page]').forEach((node) => io.observe(node));
-    return () => io.disconnect();
+
+    // 当前页跟踪：页面穿越容器中线时上报（对照阅读联动）
+    const centerIo = new IntersectionObserver(
+      (entries) => {
+        for (const entry of entries) {
+          if (entry.isIntersecting && onPageChange) {
+            onPageChange(Number((entry.target as HTMLElement).dataset.page));
+          }
+        }
+      },
+      { root: el, rootMargin: '-45% 0px -45% 0px' },
+    );
+    el.querySelectorAll('[data-page]').forEach((node) =>
+      centerIo.observe(node),
+    );
+    return () => {
+      io.disconnect();
+      centerIo.disconnect();
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [numPages, pageHeight]);
 
   const options = useMemo(() => ({ cMapUrl: undefined }), []);
@@ -84,7 +106,9 @@ function PdfViewer(props: { url: string }) {
             {Math.round(ZOOM_STEPS[zoomIdx] * 100)}%
           </p>
           <button
-            onClick={() => setZoomIdx(Math.min(ZOOM_STEPS.length - 1, zoomIdx + 1))}
+            onClick={() =>
+              setZoomIdx(Math.min(ZOOM_STEPS.length - 1, zoomIdx + 1))
+            }
             disabled={zoomIdx === ZOOM_STEPS.length - 1}
             className="linear flex h-8 w-8 items-center justify-center rounded-lg bg-brand-500 text-white transition duration-200 hover:bg-brand-600 disabled:opacity-40 dark:bg-brand-400"
           >
@@ -139,7 +163,9 @@ function PdfViewer(props: { url: string }) {
                   pageNumber={pageNo}
                   width={pageWidth}
                   renderAnnotationLayer={false}
-                  loading={<div style={{ height: pageHeight, width: pageWidth }} />}
+                  loading={
+                    <div style={{ height: pageHeight, width: pageWidth }} />
+                  }
                 />
               ) : null}
             </div>

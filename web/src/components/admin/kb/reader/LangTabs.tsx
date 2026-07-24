@@ -3,6 +3,7 @@
 import type { KbReaderView } from 'types/kb';
 
 const LABELS: Record<KbReaderView, string> = {
+  compare: '对照阅读',
   zh: '中文全文',
   bilingual: '双语对照',
   en: '英文提取文本',

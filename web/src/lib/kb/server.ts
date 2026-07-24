@@ -139,7 +139,17 @@ export function getDocContent(
     ),
     variants,
     pdfs: listPdfKinds(docDir),
+    hasPages: fs.existsSync(path.join(docDir, 'pages.zh.json')),
   };
+}
+
+export function getPages(domain: string, slug: string): unknown {
+  assertDomain(domain);
+  const docDir = assertDoc(domain, slug);
+  const file = path.join(docDir, 'pages.zh.json');
+  if (!fs.existsSync(file))
+    throw new Error(`无按页翻译数据: ${domain}/${slug}`);
+  return JSON.parse(fs.readFileSync(file, 'utf-8'));
 }
 
 const PDF_FILES: Record<KbPdfKind, string> = {

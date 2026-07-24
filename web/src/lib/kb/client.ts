@@ -5,6 +5,7 @@ import type {
   KbDocSummary,
   KbDocVariant,
   KbDomainInfo,
+  KbPageZh,
   KbSearchHit,
 } from 'types/kb';
 
@@ -34,7 +35,15 @@ export function fetchDoc(
   return fetchKb(`/api/kb/doc?${params}`);
 }
 
-export function fetchSearch(q: string, domain?: string): Promise<KbSearchHit[]> {
+export function fetchPages(domain: string, slug: string): Promise<KbPageZh[]> {
+  const params = new URLSearchParams({ domain, slug });
+  return fetchKb(`/api/kb/pages?${params}`);
+}
+
+export function fetchSearch(
+  q: string,
+  domain?: string,
+): Promise<KbSearchHit[]> {
   const params = new URLSearchParams({ q });
   if (domain) params.set('domain', domain);
   return fetchKb(`/api/kb/search?${params}`);
