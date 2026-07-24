@@ -26,6 +26,10 @@ pricing:
   qwen3.5-plus: { input: 0.26, output: 1.56 }
   claude-sonnet-4.6: { input: 3.0, output: 15.0 }
 
+# 摄取服务（v0.3 服务化）
+service:
+  api_port: 8794   # FastAPI 摄取服务端口（8787 被本机其他服务占用）
+
 # 翻译流水线参数
 translation:
   chunk_target_tokens: 3000        # 按标题边界分块的目标大小

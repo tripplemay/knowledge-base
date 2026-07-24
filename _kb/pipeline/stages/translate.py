@@ -83,5 +83,7 @@ def run(ctx: JobContext, emit: Emitter) -> None:
         ctx.usage_path(src).write_text(json.dumps(
             {"model": model, "input": delta_in, "output": delta_out}
         ))
+        emit.emit(STAGE, "chunk_done", idx=idx, model=model,
+                  input=delta_in, output=delta_out)
         emit.progress(STAGE, idx + 1, total)
     emit.stage_done(STAGE, chunks=total)

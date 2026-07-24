@@ -16,3 +16,7 @@ _kb/engines/
 web/node_modules/
 web/.next/
 web/out/
+_kb/tasks.db*
+_kb/huey.db*
+_kb/uploads/
+_kb/work/
