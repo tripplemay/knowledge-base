@@ -72,7 +72,8 @@ class JobContext:
         return src.with_name(src.name.replace(".src.md", ".usage.json"))
 
 
-def create_job(source: Path, domain: str, slug: str, job_id: str | None = None) -> Path:
+def create_job(source: Path, domain: str, slug: str, job_id: str | None = None,
+               layout: bool = True) -> Path:
     """创建 job 目录与 job.yaml，返回 job 目录路径。"""
     date = time.strftime("%Y-%m-%d")
     job_id = job_id or f"{date}-{slug}-{int(time.time())}"
@@ -85,6 +86,7 @@ def create_job(source: Path, domain: str, slug: str, job_id: str | None = None) 
                 "domain": domain,
                 "slug": slug,
                 "date": date,
+                "layout": layout,
             },
             allow_unicode=True,
         )

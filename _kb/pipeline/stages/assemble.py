@@ -44,6 +44,16 @@ def cost_usd(usage: dict, pricing: dict) -> float:
 
 
 def run(ctx: JobContext, emit: Emitter) -> None:
+    # 重试幂等：目标已存在且 sha256 与本任务源文件一致 → 视为已完成（layout 失败重试时会走到这里）
+    existing_meta = ctx.out_dir / "meta.yaml"
+    if existing_meta.exists():
+        meta = yaml.safe_load(existing_meta.read_text())
+        src_sha = hashlib.sha256(ctx.source.read_bytes()).hexdigest()
+        if meta.get("sha256") == src_sha:
+            emit.stage_done(STAGE, skipped=True, out=str(ctx.out_dir))
+            return
+        raise PipelineError(STAGE, f"目标已存在且来源不同: {ctx.out_dir}")
+
     emit.stage_start(STAGE)
     src_chunks = ctx.src_chunks()
     missing = [s.name for s in src_chunks if not ctx.zh_chunk_path(s).exists()]

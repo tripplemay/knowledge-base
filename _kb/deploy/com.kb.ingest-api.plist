@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0"><dict>
+  <key>Label</key><string>com.kb.ingest-api</string>
+  <key>WorkingDirectory</key><string>/Users/yixingzhou/project/KnowledgeBase/_kb</string>
+  <key>ProgramArguments</key><array>
+    <string>/Users/yixingzhou/project/KnowledgeBase/_kb/.venv/bin/uvicorn</string>
+    <string>server.app:app</string><string>--port</string><string>8794</string>
+  </array>
+  <key>RunAtLoad</key><true/>
+  <key>KeepAlive</key><true/>
+  <key>StandardOutPath</key><string>/tmp/kb-api.log</string>
+  <key>StandardErrorPath</key><string>/tmp/kb-api.log</string>
+</dict></plist>

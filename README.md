@@ -32,6 +32,14 @@ _kb/.venv/bin/python _kb/scripts/layout_translate.py domains/ai-engineering/sour
 
 - [x] Phase 1 摄取与翻译流水线
 - [x] Phase 2 Web 阅读界面 MVP（web/，`cd web && yarn dev` → http://localhost:3456）
+- [x] 服务化迁移（v0.3）：web 上传 → FastAPI(:8794)+Huey 服务端流水线，任务中心与 SSE 进度
 - [ ] Phase 3 整理 agents（distill/organize）+ LightRAG + Graphiti 双引擎
 - [ ] Phase 4 知识演化（claim 仲裁 + review-queue + 夜间体检）
 - [ ] Phase 5 知识锻造（kb-forge）+ MCP server 化
+
+## 摄取服务（v0.3 服务化）
+
+- **Web 上传**：http://localhost:3456/admin/kb/upload （任务中心 /admin/kb/jobs 看进度）
+- **服务**：FastAPI `:8794`（上传/任务/SSE）+ Huey worker，launchd 保活（`_kb/deploy/install-launchd.sh`，卸载加 `uninstall` 参数）
+- **CLI 仍可用**：`_kb/.venv/bin/python _kb/scripts/ingest.py <文件> --domain <域>`（与服务端同一套 stage 链，块级断点续传）
+- **单阶段调试**：`cd _kb && .venv/bin/python -m pipeline.run --job-dir work/<job> --stage translate --pretty`

@@ -50,7 +50,8 @@ def envelope(data=None, error: str | None = None) -> dict:
 
 @app.post("/api/v1/jobs", dependencies=[Depends(require_token)])
 async def create_ingest_job(file: UploadFile, domain: str = Form(...),
-                            slug: str | None = Form(default=None)) -> dict:
+                            slug: str | None = Form(default=None),
+                            layout: bool = Form(default=True)) -> dict:
     config = load_config()
     if domain not in config["domains"]:
         raise HTTPException(400, f"未注册的知识域: {domain}")
@@ -80,7 +81,7 @@ async def create_ingest_job(file: UploadFile, domain: str = Form(...),
     tmp_path.rename(source_path)
 
     slug = slug or re.sub(r"[^a-z0-9]+", "-", Path(safe_name).stem.lower()).strip("-")[:60]
-    job_dir = create_job(source_path, domain, slug)
+    job_dir = create_job(source_path, domain, slug, layout=layout)
     job_id = job_dir.name
 
     conn = db.connect()

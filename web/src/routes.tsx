@@ -1,7 +1,4 @@
-import {
-  MdOutlineLibraryBooks,
-  MdSearch,
-} from 'react-icons/md';
+import { MdOutlineLibraryBooks } from 'react-icons/md';
 
 // 知识库导航（动态文档页不在侧栏注册）
 
@@ -21,6 +18,16 @@ const routes = [
         name: '全文搜索',
         layout: '/admin',
         path: '/kb/search',
+      },
+      {
+        name: '上传文档',
+        layout: '/admin',
+        path: '/kb/upload',
+      },
+      {
+        name: '任务中心',
+        layout: '/admin',
+        path: '/kb/jobs',
       },
     ],
   },
