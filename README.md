@@ -10,7 +10,7 @@
 
 ```bash
 # 摄取一份新文档（解析→术语表→中文翻译→双语对照）
-cd ~/KnowledgeBase
+cd ~/project/KnowledgeBase
 _kb/.venv/bin/python _kb/scripts/ingest.py <文件.pdf> --domain ai-engineering
 ```
 
