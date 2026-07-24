@@ -17,6 +17,7 @@ models:
   translation_alt: qwen3.5-flash   # $0.065/$0.26，更便宜；reasoning 模型，需确认思考开销后再切换
   terms: qwen3.5-plus              # 术语表抽取与全文摘要，$0.26/$1.56（非思考输出，JSON 稳定；kimi-k2-thinking 的思考文本会污染 JSON）
   arbitration: claude-sonnet-4.6   # 批量冲突仲裁（Phase 4）；日常蒸馏在 Claude Code 会话内完成，不占网关
+  embedding: bge-m3                # LightRAG/Graphiti 嵌入（1024 维，$0.01/M tokens 级）
 
 # 网关单价（USD / 1M tokens，用于 meta.yaml 成本记录；来源 list_models 2026-07-23）
 pricing:
