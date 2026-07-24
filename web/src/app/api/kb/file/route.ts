@@ -1,9 +1,15 @@
 import fs from 'fs';
+import { Readable } from 'stream';
 import { NextRequest, NextResponse } from 'next/server';
 import { getPdfFile } from 'lib/kb/server';
 import type { KbPdfKind } from 'types/kb';
 
 const VALID_KINDS: KbPdfKind[] = ['source', 'zh', 'dual'];
+
+function stream(filePath: string, start?: number, end?: number): ReadableStream {
+  const nodeStream = fs.createReadStream(filePath, { start, end });
+  return Readable.toWeb(nodeStream) as ReadableStream;
+}
 
 export async function GET(req: NextRequest) {
   const params = req.nextUrl.searchParams;
@@ -18,13 +24,42 @@ export async function GET(req: NextRequest) {
   }
   try {
     const { path: filePath, filename } = getPdfFile(domain, slug, kind);
-    const buffer = fs.readFileSync(filePath);
-    return new NextResponse(buffer, {
-      headers: {
-        'Content-Type': 'application/pdf',
-        'Content-Disposition': `inline; filename="${filename}"`,
-        'Cache-Control': 'private, max-age=3600',
-      },
+    const stat = fs.statSync(filePath);
+    const etag = `"${stat.size}-${Math.round(stat.mtimeMs)}"`;
+    const common = {
+      'Content-Type': 'application/pdf',
+      'Content-Disposition': `inline; filename="${filename}"`,
+      'Accept-Ranges': 'bytes',
+      'Cache-Control': 'private, max-age=3600',
+      ETag: etag,
+    };
+    if (req.headers.get('if-none-match') === etag) {
+      return new NextResponse(null, { status: 304, headers: common });
+    }
+    const range = req.headers.get('range');
+    if (range) {
+      const match = /bytes=(\d*)-(\d*)/.exec(range);
+      const start = match?.[1] ? parseInt(match[1], 10) : 0;
+      const end = match?.[2]
+        ? Math.min(parseInt(match[2], 10), stat.size - 1)
+        : stat.size - 1;
+      if (start >= stat.size || start > end) {
+        return new NextResponse(null, {
+          status: 416,
+          headers: { 'Content-Range': `bytes */${stat.size}` },
+        });
+      }
+      return new NextResponse(stream(filePath, start, end), {
+        status: 206,
+        headers: {
+          ...common,
+          'Content-Range': `bytes ${start}-${end}/${stat.size}`,
+          'Content-Length': String(end - start + 1),
+        },
+      });
+    }
+    return new NextResponse(stream(filePath), {
+      headers: { ...common, 'Content-Length': String(stat.size) },
     });
   } catch (err: any) {
     console.error('[api/kb/file]', err);

@@ -8,6 +8,7 @@ import Card from 'components/card';
 import DocMetaPanel from 'components/admin/kb/reader/DocMetaPanel';
 import LangTabs from 'components/admin/kb/reader/LangTabs';
 import MarkdownReader from 'components/admin/kb/reader/MarkdownReader';
+import PdfViewer from 'components/admin/kb/reader/PdfViewer';
 import { KbError, KbLoading } from 'components/admin/kb/KbState';
 import { fetchDoc } from 'lib/kb/client';
 import { useKbFetch } from 'lib/kb/useKbFetch';
@@ -58,12 +59,10 @@ const DocReaderPage = () => {
             <LangTabs views={views} active={view} onChange={setView} />
           ) : null}
           {pdfKind ? (
-            <iframe
-              className="h-[80vh] w-full rounded-[20px]"
-              src={`/api/kb/file?domain=${encodeURIComponent(
+            <PdfViewer
+              url={`/api/kb/file?domain=${encodeURIComponent(
                 domain,
               )}&slug=${encodeURIComponent(doc)}&file=${pdfKind}`}
-              title="PDF 阅读"
             />
           ) : loading ? (
             <p className="py-10 text-center text-sm font-medium text-gray-600">

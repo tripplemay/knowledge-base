@@ -12,6 +12,7 @@ import yaml
 from .. import PIPELINE_VERSION
 from ..context import JobContext
 from ..events import Emitter, PipelineError
+from ..pdfutil import linearize
 
 STAGE = "assemble"
 
@@ -73,7 +74,10 @@ def run(ctx: JobContext, emit: Emitter) -> None:
         shutil.rmtree(tmp_dir)
     tmp_dir.mkdir(parents=True)
 
-    shutil.copy2(ctx.source, tmp_dir / f"source{ctx.source.suffix.lower()}")
+    copied_source = tmp_dir / f"source{ctx.source.suffix.lower()}"
+    shutil.copy2(ctx.source, copied_source)
+    if copied_source.suffix == ".pdf":
+        linearize(copied_source)  # Fast Web View：qpdf 不可用时静默跳过
     (tmp_dir / "source.en.md").write_text((ctx.job_dir / "source.en.md").read_text())
     (tmp_dir / "zh.md").write_text("\n\n".join(translations) + "\n")
 

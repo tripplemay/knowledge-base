@@ -11,6 +11,7 @@ import yaml
 
 from ..context import JobContext
 from ..events import Emitter, PipelineError
+from ..pdfutil import linearize
 
 STAGE = "layout"
 MONO_TARGET = "zh.pdf"
@@ -66,4 +67,6 @@ def run(ctx: JobContext, emit: Emitter) -> None:
         raise PipelineError(STAGE, f"pdf2zh 失败: {(proc.stderr or '')[-300:]}")
     find_output(doc_dir, "mono").rename(doc_dir / MONO_TARGET)
     find_output(doc_dir, "dual").rename(doc_dir / DUAL_TARGET)
+    linearize(doc_dir / MONO_TARGET)
+    linearize(doc_dir / DUAL_TARGET)
     emit.stage_done(STAGE, mono=MONO_TARGET, dual=DUAL_TARGET)
