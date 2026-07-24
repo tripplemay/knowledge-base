@@ -28,7 +28,7 @@ _kb/.venv/bin/python _kb/scripts/ingest.py <文件.pdf> --domain ai-engineering
 ## 路线图
 
 - [x] Phase 1 摄取与翻译流水线
-- [ ] Phase 2 Web 阅读界面 MVP
+- [x] Phase 2 Web 阅读界面 MVP（web/，`cd web && yarn dev` → http://localhost:3000）
 - [ ] Phase 3 整理 agents（distill/organize）+ LightRAG + Graphiti 双引擎
 - [ ] Phase 4 知识演化（claim 仲裁 + review-queue + 夜间体检）
 - [ ] Phase 5 知识锻造（kb-forge）+ MCP server 化

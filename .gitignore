@@ -11,3 +11,8 @@ _kb/engines/
 
 # macOS
 .DS_Store
+
+# Web app
+web/node_modules/
+web/.next/
+web/out/
