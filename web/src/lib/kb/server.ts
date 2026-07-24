@@ -8,6 +8,7 @@ import type {
   KbDocSummary,
   KbDocVariant,
   KbDomainInfo,
+  KbPdfKind,
   KbSearchHit,
 } from 'types/kb';
 
@@ -137,20 +138,34 @@ export function getDocContent(
       'utf-8',
     ),
     variants,
+    pdfs: listPdfKinds(docDir),
   };
 }
 
-export function getSourceFile(
+const PDF_FILES: Record<KbPdfKind, string> = {
+  source: 'source.pdf',
+  zh: 'zh.pdf',
+  dual: 'dual.pdf',
+};
+
+function listPdfKinds(docDir: string): KbPdfKind[] {
+  return (Object.keys(PDF_FILES) as KbPdfKind[]).filter((kind) =>
+    fs.existsSync(path.join(docDir, PDF_FILES[kind])),
+  );
+}
+
+export function getPdfFile(
   domain: string,
   slug: string,
+  kind: KbPdfKind,
 ): { path: string; filename: string } {
   assertDomain(domain);
   const docDir = assertDoc(domain, slug);
-  const entry = fs
-    .readdirSync(docDir)
-    .find((f) => f.startsWith('source.') && f.endsWith('.pdf'));
-  if (!entry) throw new Error(`没有 PDF 原件: ${domain}/${slug}`);
-  return { path: path.join(docDir, entry), filename: entry };
+  const filename = PDF_FILES[kind];
+  if (!filename || !fs.existsSync(path.join(docDir, filename))) {
+    throw new Error(`PDF 不存在: ${domain}/${slug}/${kind}`);
+  }
+  return { path: path.join(docDir, filename), filename };
 }
 
 export function searchKb(query: string, domain?: string): KbSearchHit[] {

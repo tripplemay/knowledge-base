@@ -6,6 +6,8 @@ const LABELS: Record<KbReaderView, string> = {
   zh: '中文全文',
   bilingual: '双语对照',
   en: '英文提取文本',
+  zhpdf: '中文 PDF',
+  dualpdf: '双语 PDF',
   pdf: 'PDF 原件',
 };
 

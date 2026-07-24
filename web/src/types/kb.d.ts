@@ -23,14 +23,18 @@ export interface KbDocSummary {
 
 export type KbDocVariant = 'zh' | 'bilingual' | 'en';
 
-/** 阅读器视图：文本三档 + PDF 原件 */
-export type KbReaderView = KbDocVariant | 'pdf';
+/** 文档目录下可用的 PDF 产物：原件 / 保版式中文 / 保版式双语 */
+export type KbPdfKind = 'source' | 'zh' | 'dual';
+
+/** 阅读器视图：文本三档 + PDF 三档 */
+export type KbReaderView = KbDocVariant | 'pdf' | 'zhpdf' | 'dualpdf';
 
 export interface KbDocContent {
   meta: KbDocSummary;
   variant: KbDocVariant;
   markdown: string;
   variants: KbDocVariant[];
+  pdfs: KbPdfKind[];
 }
 
 export interface KbSearchHit {

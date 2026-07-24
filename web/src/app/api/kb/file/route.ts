@@ -1,19 +1,23 @@
 import fs from 'fs';
 import { NextRequest, NextResponse } from 'next/server';
-import { getSourceFile } from 'lib/kb/server';
+import { getPdfFile } from 'lib/kb/server';
+import type { KbPdfKind } from 'types/kb';
+
+const VALID_KINDS: KbPdfKind[] = ['source', 'zh', 'dual'];
 
 export async function GET(req: NextRequest) {
   const params = req.nextUrl.searchParams;
   const domain = params.get('domain');
   const slug = params.get('slug');
-  if (!domain || !slug) {
+  const kind = (params.get('file') ?? 'source') as KbPdfKind;
+  if (!domain || !slug || !VALID_KINDS.includes(kind)) {
     return NextResponse.json(
-      { success: false, data: null, error: '缺少 domain/slug 参数' },
+      { success: false, data: null, error: '参数不合法（需 domain、slug，file ∈ source|zh|dual）' },
       { status: 400 },
     );
   }
   try {
-    const { path: filePath, filename } = getSourceFile(domain, slug);
+    const { path: filePath, filename } = getPdfFile(domain, slug, kind);
     const buffer = fs.readFileSync(filePath);
     return new NextResponse(buffer, {
       headers: {
@@ -25,7 +29,7 @@ export async function GET(req: NextRequest) {
   } catch (err: any) {
     console.error('[api/kb/file]', err);
     return NextResponse.json(
-      { success: false, data: null, error: String(err?.message ?? '读取原件失败') },
+      { success: false, data: null, error: String(err?.message ?? '读取 PDF 失败') },
       { status: 404 },
     );
   }
