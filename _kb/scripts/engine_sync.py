@@ -9,8 +9,14 @@
 """
 import argparse
 import asyncio
+import os
 import sys
 from pathlib import Path
+
+# 必须在 lightrag 导入前设置：网关高并发时嵌入排队可超默认 30s
+os.environ.setdefault("EMBEDDING_TIMEOUT", "180")
+os.environ.setdefault("EMBEDDING_BATCH_NUM", "8")
+os.environ.setdefault("EMBEDDING_FUNC_MAX_ASYNC", "2")  # 网关嵌入限流保守并发
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
@@ -37,10 +43,17 @@ def build_rag(domain: str, config: dict, env: dict):
             base_url=base_url, api_key=api_key, **kwargs,
         )
 
+    import numpy as np
+    from openai import AsyncOpenAI
+    embed_client = AsyncOpenAI(base_url=base_url, api_key=api_key, timeout=120)
+
     async def embed_func(texts: list[str]):
-        return await openai_embed(
-            texts, model=embed_model, base_url=base_url, api_key=api_key,
+        # 不用 lightrag 的 openai_embed：网关不支持 base64 编码返回，
+        # 必须显式 encoding_format="float"，否则得到 0 维向量
+        resp = await embed_client.embeddings.create(
+            model=embed_model, input=texts, encoding_format="float",
         )
+        return np.array([d.embedding for d in resp.data])
 
     workspace = ENGINE_ROOT / domain
     workspace.mkdir(parents=True, exist_ok=True)

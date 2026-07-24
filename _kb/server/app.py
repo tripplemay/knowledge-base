@@ -141,6 +141,26 @@ def retry_job(job_id: str) -> dict:
     return envelope({"id": job_id, "status": "queued"})
 
 
+@app.get("/api/v1/kg/graph", dependencies=[Depends(require_token)])
+def kg_graph(domain: str, max_nodes: int = 300) -> dict:
+    from . import kg
+    try:
+        return envelope(kg.load_graph(domain, min(max_nodes, 800)))
+    except FileNotFoundError as err:
+        raise HTTPException(404, str(err)) from err
+
+
+@app.post("/api/v1/kg/query", dependencies=[Depends(require_token)])
+async def kg_query(payload: dict) -> dict:
+    from . import kg
+    domain = payload.get("domain", "")
+    question = str(payload.get("question", "")).strip()
+    if not domain or len(question) < 4:
+        raise HTTPException(400, "需要 domain 与至少 4 字符的 question")
+    answer = await kg.semantic_query(domain, question)
+    return envelope({"answer": answer})
+
+
 @app.get("/api/v1/jobs/{job_id}/events", dependencies=[Depends(require_token)])
 async def job_events(job_id: str, last_event_id: str | None = Header(default=None)):
     """SSE：断线用 Last-Event-ID 补发；任务终态后发送 done 并结束。"""

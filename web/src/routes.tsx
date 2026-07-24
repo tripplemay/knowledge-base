@@ -20,6 +20,16 @@ const routes = [
         path: '/kb/search',
       },
       {
+        name: '语义问答',
+        layout: '/admin',
+        path: '/kb/ask',
+      },
+      {
+        name: '知识图谱',
+        layout: '/admin',
+        path: '/kb/graph',
+      },
+      {
         name: '上传文档',
         layout: '/admin',
         path: '/kb/upload',
