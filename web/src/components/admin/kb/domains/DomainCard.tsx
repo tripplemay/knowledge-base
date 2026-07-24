@@ -8,7 +8,7 @@ function DomainCard(props: { domain: KbDomainInfo }) {
   const { domain } = props;
   return (
     <Link href={`/admin/kb/${domain.id}`}>
-      <Card extra="flex flex-col w-full h-full !p-5 3xl:p-![18px] bg-white hover:shadow-3xl transition duration-200 cursor-pointer">
+      <Card extra="flex flex-col w-full h-full !p-5 bg-white transition duration-200 cursor-pointer hover:-translate-y-1">
         <div className="flex items-center gap-3">
           <div className="flex h-12 w-12 items-center justify-center rounded-full bg-lightPrimary dark:bg-navy-700">
             <MdOutlineLibraryBooks className="h-6 w-6 text-brand-500 dark:text-white" />
