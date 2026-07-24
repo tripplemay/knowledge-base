@@ -1,0 +1,34 @@
+# 知识库全局配置
+# 设计方案见 ~/Doc/kb-design-proposal.md（v0.2，2026-07-23 确认）
+
+version: 0.1
+
+# 知识域注册表（需求3：目录级硬隔离）
+domains:
+  ai-engineering:
+    name: AI 工程
+    description: AI Agent、LLM 应用开发、上下文工程、Agentic Engineering
+    graph_group_id: ai-engineering      # Graphiti group_id（Phase 3 启用）
+    lightrag_workspace: ai-engineering  # LightRAG workspace（Phase 3 启用）
+
+# 模型路由（走 aigc-gateway，OpenAI 兼容 API，凭证在 _kb/.env）
+models:
+  translation: deepseek-v4-flash   # $0.14/$0.28 per 1M，非 reasoning 模型（无思考 token 开销），中文原生
+  translation_alt: qwen3.5-flash   # $0.065/$0.26，更便宜；reasoning 模型，需确认思考开销后再切换
+  terms: qwen3.5-plus              # 术语表抽取与全文摘要，$0.26/$1.56（非思考输出，JSON 稳定；kimi-k2-thinking 的思考文本会污染 JSON）
+  arbitration: claude-sonnet-4.6   # 批量冲突仲裁（Phase 4）；日常蒸馏在 Claude Code 会话内完成，不占网关
+
+# 网关单价（USD / 1M tokens，用于 meta.yaml 成本记录；来源 list_models 2026-07-23）
+pricing:
+  deepseek-v4-flash: { input: 0.14, output: 0.28 }
+  qwen3.5-flash: { input: 0.065, output: 0.26 }
+  kimi-k2-thinking: { input: 0.6, output: 2.5 }
+  qwen3.5-plus: { input: 0.26, output: 1.56 }
+  claude-sonnet-4.6: { input: 3.0, output: 15.0 }
+
+# 翻译流水线参数
+translation:
+  chunk_target_tokens: 3000        # 按标题边界分块的目标大小
+  chunk_max_tokens: 4000
+  parallel_chunks: 1               # 1 = 顺序翻译（滑动上下文衔接，质量优先）
+  context_tail_chars: 600          # 前一块尾部作为衔接上下文

@@ -1,0 +1,13 @@
+# Secrets — never commit
+_kb/.env
+
+# Python
+_kb/.venv/
+__pycache__/
+*.pyc
+
+# Engine data (LightRAG / Graphiti local storage)
+_kb/engines/
+
+# macOS
+.DS_Store
