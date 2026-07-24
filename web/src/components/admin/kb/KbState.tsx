@@ -4,7 +4,7 @@ import Card from 'components/card';
 export function KbLoading() {
   return (
     <Card extra="w-full mt-3 flex items-center justify-center !p-10">
-      <p className="text-sm font-medium text-gray-600 dark:text-white/70">
+      <p className="text-sm font-medium text-gray-600">
         加载中…
       </p>
     </Card>

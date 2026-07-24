@@ -1,4 +1,5 @@
-// 阅读语言切换 —— 沿用模板 course-page CourseInfo 的 tab 样式（底部高亮条）
+// 阅读语言切换 —— 逐类复刻模板 course-page CourseInfo 的 tab 实现
+// （非激活项用同宽白色底边占位，避免切换时内容跳动；激活项 brand 底边）
 import type { KbDocVariant } from 'types/kb';
 
 const LABELS: Record<KbDocVariant, string> = {
@@ -14,19 +15,21 @@ function LangTabs(props: {
 }) {
   const { variants, active, onChange } = props;
   return (
-    <div className="mb-2 flex w-full items-center gap-6 border-b border-gray-200 dark:border-white/10">
+    <div className="mb-4 flex w-full items-center gap-8">
       {variants.map((v) => (
-        <button
+        <div
           key={v}
-          onClick={() => onChange(v)}
-          className={`pb-3 text-sm font-bold transition duration-200 ${
+          className={
             active === v
-              ? 'border-b-[4px] border-brand-500 text-navy-700 dark:border-brand-400 dark:text-white'
-              : 'text-gray-600 hover:text-navy-700 dark:hover:text-white'
-          }`}
+              ? 'flex items-center gap-3 border-b-[4px] border-brand-500 pb-3 hover:cursor-pointer dark:border-brand-400'
+              : 'flex items-center gap-3 border-b-[4px] border-white pb-3 hover:cursor-pointer dark:!border-navy-800'
+          }
+          onClick={() => onChange(v)}
         >
-          {LABELS[v]}
-        </button>
+          <p className="text-[18px] font-medium text-navy-700 dark:text-white">
+            {LABELS[v]}
+          </p>
+        </div>
       ))}
     </div>
   );

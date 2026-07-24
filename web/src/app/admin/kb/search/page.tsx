@@ -1,7 +1,7 @@
 'use client';
-// 全文搜索 —— 搜索框沿用模板 SearchTableOrders 的搜索样式
+// 全文搜索 —— 搜索框与按钮均取自模板样式目录（SearchTableOrders 搜索框 + buttons 页小尺寸主按钮）
 import { useState } from 'react';
-import Link from 'next/link';
+import NavLink from 'components/link/NavLink';
 import Card from 'components/card';
 import SearchIcon from 'components/icons/SearchIcon';
 import { KbError } from 'components/admin/kb/KbState';
@@ -45,7 +45,7 @@ const SearchPage = () => {
           </div>
           <button
             onClick={runSearch}
-            className="linear rounded-xl bg-brand-500 px-5 py-2 text-base font-medium text-white transition duration-200 hover:bg-brand-600 active:bg-brand-700 dark:bg-brand-400 dark:hover:bg-brand-300 dark:active:bg-brand-200"
+            className="linear rounded-lg bg-brand-500 px-3 py-2.5 text-sm font-medium text-white transition duration-200 hover:bg-brand-600 active:bg-brand-700 dark:bg-brand-400 dark:text-white dark:hover:bg-brand-300 dark:active:bg-brand-200"
           >
             搜索
           </button>
@@ -55,35 +55,31 @@ const SearchPage = () => {
       {error ? <KbError message={error} /> : null}
       {loading ? (
         <Card extra="w-full mt-3 !p-6">
-          <p className="text-sm font-medium text-gray-600 dark:text-white/70">
-            搜索中…
-          </p>
+          <p className="text-sm font-medium text-gray-600">搜索中…</p>
         </Card>
       ) : null}
       {hits !== null && !loading ? (
         <Card extra="w-full mt-3 !p-6">
-          <p className="mb-3 text-sm font-bold text-navy-700 dark:text-white">
+          <h5 className="text-lg font-bold text-navy-700 dark:text-white">
             {hits.length} 条结果
-          </p>
-          <div className="divide-y divide-gray-200 dark:divide-white/10">
-            {hits.map((hit, i) => (
-              <Link
-                key={i}
-                href={`/admin/kb/${hit.domain}/${hit.slug}`}
-                className="block py-3 hover:bg-lightPrimary dark:hover:bg-navy-700"
-              >
-                <p className="text-sm font-bold text-brand-500 dark:text-brand-400">
-                  {hit.title}
-                  <span className="ml-2 text-xs font-normal text-gray-600">
-                    {hit.domain} · 第 {hit.line} 行
-                  </span>
-                </p>
-                <p className="mt-1 text-sm text-navy-700 dark:text-white/80">
-                  {hit.snippet}
-                </p>
-              </Link>
-            ))}
-          </div>
+          </h5>
+          {hits.map((hit, i) => (
+            <NavLink
+              key={i}
+              href={`/admin/kb/${hit.domain}/${hit.slug}`}
+              className="mt-2 block px-1 py-2 hover:cursor-pointer"
+            >
+              <p className="text-sm font-bold text-brand-500 dark:text-brand-400">
+                {hit.title}
+                <span className="ml-2 text-xs font-normal text-gray-600">
+                  {hit.domain} · 第 {hit.line} 行
+                </span>
+              </p>
+              <p className="mt-1 text-sm font-medium text-navy-700 dark:text-white">
+                {hit.snippet}
+              </p>
+            </NavLink>
+          ))}
         </Card>
       ) : null}
     </div>

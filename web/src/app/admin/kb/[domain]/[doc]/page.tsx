@@ -34,7 +34,7 @@ const DocReaderPage = () => {
             />
           ) : null}
           {loading ? (
-            <p className="py-10 text-center text-sm font-medium text-gray-600 dark:text-white/70">
+            <p className="py-10 text-center text-sm font-medium text-gray-600">
               加载中…
             </p>
           ) : (

@@ -1,6 +1,6 @@
 // 文档列表表格 —— 基于模板 SearchTableOrders 脚手架改造（搜索/排序/分页保持一致）
 import React from 'react';
-import Link from 'next/link';
+import NavLink from 'components/link/NavLink';
 import Card from 'components/card';
 import SearchIcon from 'components/icons/SearchIcon';
 import { MdChevronRight, MdChevronLeft } from 'react-icons/md';
@@ -42,7 +42,7 @@ function DocTable(props: { tableData: KbDocSummary[] }) {
       id: 'title',
       header: () => headerCell('文档'),
       cell: (info) => (
-        <Link
+        <NavLink
           href={`/admin/kb/${info.row.original.domain}/${info.row.original.slug}`}
           className="font-medium text-navy-700 hover:text-brand-500 dark:text-white dark:hover:text-brand-400"
         >
@@ -50,7 +50,7 @@ function DocTable(props: { tableData: KbDocSummary[] }) {
           <p className="text-xs font-normal text-gray-600">
             {info.row.original.sourceFile}
           </p>
-        </Link>
+        </NavLink>
       ),
     }),
     columnHelper.accessor('ingestedAt', {
@@ -93,12 +93,12 @@ function DocTable(props: { tableData: KbDocSummary[] }) {
       id: 'actions',
       header: () => headerCell('操作'),
       cell: (info) => (
-        <Link
+        <NavLink
           href={`/admin/kb/${info.row.original.domain}/${info.getValue()}`}
           className="cursor-pointer font-medium text-brand-500 dark:text-brand-400"
         >
           阅读
-        </Link>
+        </NavLink>
       ),
     }),
   ];
@@ -197,7 +197,9 @@ function DocTable(props: { tableData: KbDocSummary[] }) {
         {/* pagination */}
         <div className="mt-2 flex h-20 w-full items-center justify-between px-6">
           <div className="flex items-center gap-3">
-            <p className="text-sm text-gray-700">共 {tableData.length} 份文档</p>
+            <p className="text-sm text-gray-700">
+              共 {tableData.length} 份文档
+            </p>
           </div>
           <div className="flex items-center gap-2">
             <button
