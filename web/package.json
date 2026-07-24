@@ -3,9 +3,9 @@
   "version": "3.0.0",
   "private": true,
   "scripts": {
-    "dev": "next dev",
+    "dev": "next dev -p 3456",
     "build": "next build",
-    "start": "next start",
+    "start": "next start -p 3456",
     "export": "next export",
     "lint": "next lint",
     "predeploy": "yarn run build",
