@@ -39,14 +39,19 @@ export type KbReaderView =
   | 'dualpdf'
   | 'compare';
 
-export interface KbDocContent {
+/** 阅读器骨架：驱动 LangTabs / DocMetaPanel，不含正文 */
+export interface KbDocMeta {
   meta: KbDocSummary;
-  variant: KbDocVariant;
-  markdown: string;
   variants: KbDocVariant[];
   pdfs: KbPdfKind[];
   hasPages: boolean;
 }
+
+/** 正文接口返回体 = 骨架 + 选中档正文（字段与旧版一致，向后兼容） */
+export type KbDocContent = KbDocMeta & {
+  variant: KbDocVariant;
+  markdown: string;
+};
 
 export interface KbPageZh {
   page: number;

@@ -1,4 +1,6 @@
+'use client';
 // 文档列表表格 —— 基于模板 SearchTableOrders 脚手架改造（搜索/排序/分页保持一致）
+// 父页面已改为 Server Component，本组件持有 useState + react-table 交互状态，必须显式声明客户端
 import React from 'react';
 import NavLink from 'components/link/NavLink';
 import Card from 'components/card';

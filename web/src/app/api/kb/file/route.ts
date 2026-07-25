@@ -1,4 +1,5 @@
 import fs from 'fs';
+import { stat } from 'fs/promises';
 import { Readable } from 'stream';
 import { NextRequest, NextResponse } from 'next/server';
 import { parseRange } from 'lib/kb/range';
@@ -32,9 +33,10 @@ export async function GET(req: NextRequest) {
     );
   }
   try {
-    const { path: filePath, filename } = getPdfFile(domain, slug, kind);
-    const stat = fs.statSync(filePath);
-    const etag = `"${stat.size}-${Math.round(stat.mtimeMs)}"`;
+    const { path: filePath, filename } = await getPdfFile(domain, slug, kind);
+    // Range 请求高频（PdfViewer 虚拟化滚动），这里必须走异步 stat，不能阻塞事件循环
+    const fileStat = await stat(filePath);
+    const etag = `"${fileStat.size}-${Math.round(fileStat.mtimeMs)}"`;
     const common = {
       'Content-Type': 'application/pdf',
       'Content-Disposition': `inline; filename="${filename}"`,
@@ -45,12 +47,12 @@ export async function GET(req: NextRequest) {
     if (req.headers.get('if-none-match') === etag) {
       return new NextResponse(null, { status: 304, headers: common });
     }
-    const r = parseRange(req.headers.get('range'), stat.size);
+    const r = parseRange(req.headers.get('range'), fileStat.size);
     if (r.kind === 'unsatisfiable') {
       return new NextResponse(null, {
         status: 416,
         // 416 也要带 Accept-Ranges/ETag/Cache-Control
-        headers: { ...common, 'Content-Range': `bytes */${stat.size}` },
+        headers: { ...common, 'Content-Range': `bytes */${fileStat.size}` },
       });
     }
     if (r.kind === 'partial') {
@@ -58,13 +60,13 @@ export async function GET(req: NextRequest) {
         status: 206,
         headers: {
           ...common,
-          'Content-Range': `bytes ${r.start}-${r.end}/${stat.size}`,
+          'Content-Range': `bytes ${r.start}-${r.end}/${fileStat.size}`,
           'Content-Length': String(r.end - r.start + 1),
         },
       });
     }
     return new NextResponse(stream(filePath), {
-      headers: { ...common, 'Content-Length': String(stat.size) },
+      headers: { ...common, 'Content-Length': String(fileStat.size) },
     });
   } catch (err: any) {
     // 详细信息（含绝对路径）只留在服务端日志，不回显给客户端

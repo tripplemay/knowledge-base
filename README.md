@@ -53,5 +53,10 @@ _kb/.venv/bin/python _kb/scripts/layout_translate.py domains/ai-engineering/sour
 
 - **Web 上传**：http://localhost:3456/admin/kb/upload （任务中心 /admin/kb/jobs 看进度）
 - **服务**：FastAPI `:8794`（上传/任务/SSE）+ Huey worker，launchd 保活（`_kb/deploy/install-launchd.sh`，卸载加 `uninstall` 参数）
+- **鉴权与同源代理**：浏览器不直连 FastAPI，写侧统一走 Next 的 `/api/v1/*`
+  服务端代理（`web/src/app/api/v1/[...path]/route.ts`：接口白名单 + 同源校验 +
+  服务端注入 `X-KB-Token`）。首次部署需把 `web/.env.example` 复制为
+  `web/.env.local` 并填 `KB_API_TOKEN`，其值必须与 `_kb/.env` 中的一致
+  （生成：`openssl rand -hex 32`）；两处不一致会导致写侧接口全部 401
 - **CLI 仍可用**：`_kb/.venv/bin/python _kb/scripts/ingest.py <文件> --domain <域>`（与服务端同一套 stage 链，块级断点续传）
 - **单阶段调试**：`cd _kb && .venv/bin/python -m pipeline.run --job-dir work/<job> --stage translate --pretty`

@@ -16,7 +16,6 @@ from pathlib import Path
 
 import aiofiles
 from fastapi import Depends, FastAPI, Form, Header, HTTPException, UploadFile
-from fastapi.middleware.cors import CORSMiddleware
 from sse_starlette.sse import EventSourceResponse
 
 from pipeline.context import AUTO_DOMAIN, create_job, load_config, load_env
@@ -30,12 +29,9 @@ MAX_UPLOAD_BYTES = 200 * 1024 * 1024
 CHUNK = 1024 * 1024
 
 app = FastAPI(title="KnowledgeBase Ingest API")
-app.add_middleware(
-    CORSMiddleware,
-    allow_origins=["http://localhost:3456"],
-    allow_methods=["*"],
-    allow_headers=["*"],
-)
+# 刻意不装 CORSMiddleware：本服务只接受来自 Next 服务端代理（web/src/app/api/v1/[...path]）
+# 的请求，浏览器不再直连。留着 CORS 只会给"浏览器还能直连"留后门，
+# 且 CORS 只挡"读响应"、挡不住"请求被执行"（防跨站请求靠 KB_API_TOKEN）。
 
 
 def require_token(x_kb_token: str | None = Header(default=None)) -> None:

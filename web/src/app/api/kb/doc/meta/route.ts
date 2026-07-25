@@ -1,5 +1,7 @@
+// 阅读器骨架接口：只返回 variants/pdfs/hasPages/meta，不含正文
+// 与 /api/kb/doc 并存（App Router 允许 doc/route.ts 与 doc/meta/route.ts 同时存在）
 import { NextRequest, NextResponse } from 'next/server';
-import { getPages } from 'lib/kb/server';
+import { getDocMeta } from 'lib/kb/server';
 
 export async function GET(req: NextRequest) {
   const params = req.nextUrl.searchParams;
@@ -7,23 +9,23 @@ export async function GET(req: NextRequest) {
   const slug = params.get('slug');
   if (!domain || !slug) {
     return NextResponse.json(
-      { success: false, data: null, error: '缺少 domain/slug 参数' },
+      { success: false, data: null, error: '参数不合法（需 domain、slug）' },
       { status: 400 },
     );
   }
   try {
     return NextResponse.json({
       success: true,
-      data: await getPages(domain, slug),
+      data: await getDocMeta(domain, slug),
       error: null,
     });
   } catch (err: any) {
-    console.error('[api/kb/pages]', err);
+    console.error('[api/kb/doc/meta]', err);
     return NextResponse.json(
       {
         success: false,
         data: null,
-        error: String(err?.message ?? '读取按页翻译失败'),
+        error: String(err?.message ?? '读取文档信息失败'),
       },
       { status: 404 },
     );

@@ -2,6 +2,7 @@
 import type {
   KbApiResponse,
   KbDocContent,
+  KbDocMeta,
   KbDocSummary,
   KbDocVariant,
   KbDomainInfo,
@@ -25,6 +26,12 @@ export function fetchDomains(): Promise<KbDomainInfo[]> {
 
 export function fetchDocs(domain: string): Promise<KbDocSummary[]> {
   return fetchKb(`/api/kb/docs?domain=${encodeURIComponent(domain)}`);
+}
+
+/** 阅读器骨架（不含正文）：切换视图时无需重拉，故与 fetchDoc 分开 */
+export function fetchDocMeta(domain: string, slug: string): Promise<KbDocMeta> {
+  const params = new URLSearchParams({ domain, slug });
+  return fetchKb(`/api/kb/doc/meta?${params}`);
 }
 
 export function fetchDoc(

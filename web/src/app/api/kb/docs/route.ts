@@ -10,11 +10,19 @@ export async function GET(req: NextRequest) {
     );
   }
   try {
-    return NextResponse.json({ success: true, data: listDocs(domain), error: null });
+    return NextResponse.json({
+      success: true,
+      data: await listDocs(domain),
+      error: null,
+    });
   } catch (err: any) {
     console.error('[api/kb/docs]', err);
     return NextResponse.json(
-      { success: false, data: null, error: String(err?.message ?? '读取文档列表失败') },
+      {
+        success: false,
+        data: null,
+        error: String(err?.message ?? '读取文档列表失败'),
+      },
       { status: 404 },
     );
   }

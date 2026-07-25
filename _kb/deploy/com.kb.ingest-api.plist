@@ -5,7 +5,10 @@
   <key>WorkingDirectory</key><string>/Users/yixingzhou/project/KnowledgeBase/_kb</string>
   <key>ProgramArguments</key><array>
     <string>/Users/yixingzhou/project/KnowledgeBase/_kb/.venv/bin/uvicorn</string>
-    <string>server.app:app</string><string>--port</string><string>8794</string>
+    <string>server.app:app</string>
+    <!-- 只监听回环：浏览器经 Next 的 /api/v1 代理访问，本服务不对外暴露 -->
+    <string>--host</string><string>127.0.0.1</string>
+    <string>--port</string><string>8794</string>
   </array>
   <key>RunAtLoad</key><true/>
   <key>KeepAlive</key><true/>

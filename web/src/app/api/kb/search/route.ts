@@ -12,7 +12,11 @@ export async function GET(req: NextRequest) {
     );
   }
   try {
-    return NextResponse.json({ success: true, data: searchKb(q, domain), error: null });
+    return NextResponse.json({
+      success: true,
+      data: await searchKb(q, domain),
+      error: null,
+    });
   } catch (err: any) {
     console.error('[api/kb/search]', err);
     return NextResponse.json(

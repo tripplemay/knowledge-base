@@ -8,10 +8,21 @@ export interface KbFetchState<T> {
   error: string | null;
 }
 
+export interface KbFetchOptions {
+  /**
+   * 重新取数期间保留上一次的数据（默认 false）。
+   * 只在「同一实体换视图」的场景开启（如阅读器切语言档）；
+   * 换实体的场景（如切知识域）必须保持 false，否则会短暂显示上一个实体的数据。
+   */
+  keepPreviousData?: boolean;
+}
+
 export function useKbFetch<T>(
   fetcher: () => Promise<T>,
   deps: unknown[],
+  options: KbFetchOptions = {},
 ): KbFetchState<T> {
+  const { keepPreviousData = false } = options;
   const [state, setState] = useState<KbFetchState<T>>({
     data: null,
     loading: true,
@@ -20,19 +31,28 @@ export function useKbFetch<T>(
 
   useEffect(() => {
     let cancelled = false;
-    setState({ data: null, loading: true, error: null });
+    setState((prev) => ({
+      data: keepPreviousData ? prev.data : null,
+      loading: true,
+      error: null,
+    }));
     fetcher()
       .then((data) => {
         if (!cancelled) setState({ data, loading: false, error: null });
       })
       .catch((err: Error) => {
-        if (!cancelled) setState({ data: null, loading: false, error: err.message });
+        if (!cancelled)
+          setState((prev) => ({
+            data: keepPreviousData ? prev.data : null,
+            loading: false,
+            error: err.message,
+          }));
       });
     return () => {
       cancelled = true;
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, deps);
+  }, [...deps, keepPreviousData]);
 
   return state;
 }
