@@ -2,9 +2,9 @@
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
 <plist version="1.0"><dict>
   <key>Label</key><string>com.kb.ingest-worker</string>
-  <key>WorkingDirectory</key><string>/Users/yixingzhou/project/KnowledgeBase/_kb</string>
+  <key>WorkingDirectory</key><string>__KB_ROOT__/_kb</string>
   <key>ProgramArguments</key><array>
-    <string>/Users/yixingzhou/project/KnowledgeBase/_kb/.venv/bin/huey_consumer</string>
+    <string>__KB_ROOT__/_kb/.venv/bin/huey_consumer</string>
     <string>server.tasks.huey</string><string>-w</string><string>1</string><string>-k</string><string>thread</string>
   </array>
   <key>RunAtLoad</key><true/>
