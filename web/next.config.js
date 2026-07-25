@@ -1,14 +1,6 @@
 /** @type {import('next').NextConfig} */
 
-// const withTM = require('next-transpile-modules')(['@babel/preset-react']);
-//   '@fullcalendar/common',
-//   '@fullcalendar/common',
-//   '@fullcalendar/daygrid',
-//   '@fullcalendar/interaction',
-//   '@fullcalendar/react',
-
 const nextConfig = {
-  swcMinify: true,
   basePath: process.env.NEXT_PUBLIC_BASE_PATH,
   assetPrefix: process.env.NEXT_PUBLIC_BASE_PATH,
   // react-pdf/pdfjs-dist：避免 webpack 解析 Node 端可选依赖 canvas
@@ -17,12 +9,7 @@ const nextConfig = {
     return config;
   },
   images: {
-    domains: [
-      'images.unsplash.com',
-      'i.ibb.co',
-      'scontent.fotp8-1.fna.fbcdn.net',
-    ],
-    // Make ENV
+    // unoptimized 下图片优化器被完全绕过，远程域名白名单不生效，故不配置
     unoptimized: true,
   },
 };
