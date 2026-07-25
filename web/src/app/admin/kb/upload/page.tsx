@@ -4,7 +4,7 @@ import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Card from 'components/card';
 import InputField from 'components/fields/InputField';
-import SwitchField from 'components/fields/SwitchField';
+import KbSwitchField from 'components/admin/kb/KbSwitchField';
 import UploadDropzone from 'components/admin/kb/jobs/UploadDropzone';
 import { KbError } from 'components/admin/kb/KbState';
 import { fetchDomains } from 'lib/kb/client';
@@ -73,14 +73,14 @@ const UploadPage = () => {
             onChange={(e: any) => setSlug(e.target.value)}
           />
         </div>
-        <SwitchField
+        <KbSwitchField
           id="layout-switch"
           label="生成保版式中文 PDF"
           desc="PDF 文档额外生成 zh.pdf 与 dual.pdf（耗时较长、CPU 占用高）"
           mt="mt-4"
           mb="mb-1"
           checked={layout}
-          onChange={() => setLayout(!layout)}
+          onChange={setLayout}
         />
         <button
           onClick={submit}
