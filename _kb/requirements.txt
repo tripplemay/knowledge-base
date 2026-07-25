@@ -1,0 +1,29 @@
+# 摄取服务与流水线的直接依赖（版本锁定为本机验证过的组合）
+# 安装：uv pip install -r requirements.txt   或   pip install -r requirements.txt
+# 完整传递依赖见 requirements.lock.txt（容器构建用那个，可复现）
+
+# --- Web 服务 ---
+fastapi==0.139.2
+uvicorn==0.51.0
+python-multipart==0.0.32      # UploadFile 的 multipart 解析
+aiofiles==25.1.0              # 上传流式落盘
+sse-starlette==3.4.6          # 任务进度 SSE
+
+# --- 任务队列 ---
+huey==3.3.0                   # SqliteHuey，无需 Redis
+
+# --- 文档解析 ---
+pymupdf==1.28.0               # fitz：纯文本提取与覆盖率回退判定
+pymupdf4llm==1.28.0           # PDF → Markdown（结构感知）
+
+# --- 检索引擎（Phase 3）---
+lightrag-hku==1.5.4           # 嵌入式知识图谱 + 混合检索
+nano-vectordb==0.0.4.3        # LightRAG 的向量存储后端
+networkx==3.6.1               # graphml 读取与度数排序
+numpy==2.5.1
+openai==2.11.0                # LightRAG 经 aigc-gateway 走 OpenAI 兼容协议
+
+# --- 基础库 ---
+pyyaml==6.0.3
+requests==2.34.2
+tenacity==9.1.4               # 网关调用重试

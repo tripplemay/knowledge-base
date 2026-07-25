@@ -23,13 +23,9 @@ huey = SqliteHuey(filename=str(KB_DIR / "huey.db"))
 
 
 def _git_commit(paths: list[str], message: str) -> None:
-    try:
-        subprocess.run(["git", "add", *paths], cwd=KB_ROOT, check=True,
-                       capture_output=True, timeout=60)
-        subprocess.run(["git", "commit", "-q", "-m", message], cwd=KB_ROOT,
-                       check=True, capture_output=True, timeout=60)
-    except subprocess.SubprocessError as err:
-        print(f"[warn] git commit 失败: {err}", file=sys.stderr)
+    """知识提交写进数据仓 .kbdata.git（代码仓是公开的，不含语料）。"""
+    from .vcs import commit
+    commit(paths, message)
 
 
 @huey.task()

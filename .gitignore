@@ -1,28 +1,36 @@
+# ── 知识数据不进代码仓 ────────────────────────────────────────────────
+# 本仓库是公开的代码仓；语料与知识产物由**独立的数据仓** .kbdata.git 管理
+# （同一工作区、不同 GIT_DIR，见 _kb/server/vcs.py 与 AGENTS.md）。
+# 这样既能公开代码，又保住"git 管理全部知识历史"这条设计约束。
+/domains/
+/forge/
+_kb/domains.yaml
+.kbdata.git/
+
 # Secrets — never commit
 _kb/.env
+web/.env.local
 
 # Python
 _kb/.venv/
 __pycache__/
 *.pyc
 
-# Engine data (LightRAG / Graphiti local storage)
+# 运行态数据（可重建，不进任何仓）
 _kb/engines/
-
-# macOS
-.DS_Store
-
-# Web app
-web/node_modules/
-web/.next/
-web/out/
 _kb/tasks.db*
 _kb/huey.db*
 _kb/uploads/
 _kb/work/
 _kb/reports/
-
-# 注册表写锁（运行态）与 pytest 缓存
 _kb/domains.yaml.lock
 _kb/domains.yaml.tmp
+
+# Web app
+web/node_modules/
+web/.next/
+web/out/
+
+# 工具与系统
 .pytest_cache/
+.DS_Store

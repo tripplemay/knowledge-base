@@ -180,7 +180,6 @@ def review_list(status: str = "pending") -> dict:
 
 @app.post("/api/v1/review/{item_id}/{action}", dependencies=[Depends(require_token)])
 def review_act(item_id: str, action: str) -> dict:
-    import subprocess
     import time as _time
 
     import yaml
@@ -207,14 +206,9 @@ def review_act(item_id: str, action: str) -> dict:
     item["status"] = "approved" if action == "approve" else "rejected"
     item["decided_at"] = _time.strftime("%Y-%m-%dT%H:%M:%S")
     path.write_text(yaml.safe_dump(item, allow_unicode=True, sort_keys=False))
-    subprocess.run(
-        ["git", "add", "domains", "forge/review-queue"], cwd=KB_ROOT,
-        capture_output=True, timeout=60,
-    )
-    subprocess.run(
-        ["git", "commit", "-q", "-m", f"review: {item_id} {item['status']}（{item['old_claim']}）"],
-        cwd=KB_ROOT, capture_output=True, timeout=60,
-    )
+    from .vcs import commit
+    commit(["domains", "forge/review-queue"],
+           f"review: {item_id} {item['status']}（{item['old_claim']}）")
     return envelope(item)
 
 
