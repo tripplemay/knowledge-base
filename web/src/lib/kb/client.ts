@@ -9,8 +9,9 @@ import type {
   KbSearchHit,
 } from 'types/kb';
 
-async function fetchKb<T>(url: string): Promise<T> {
-  const res = await fetch(url);
+// signal 为末位可选参数，按位置调用的既有调用点不受影响
+async function fetchKb<T>(url: string, signal?: AbortSignal): Promise<T> {
+  const res = await fetch(url, { signal });
   const body = (await res.json()) as KbApiResponse<T>;
   if (!body.success || body.data === null) {
     throw new Error(body.error ?? `请求失败: ${url}`);
@@ -43,8 +44,9 @@ export function fetchPages(domain: string, slug: string): Promise<KbPageZh[]> {
 export function fetchSearch(
   q: string,
   domain?: string,
+  signal?: AbortSignal,
 ): Promise<KbSearchHit[]> {
   const params = new URLSearchParams({ q });
   if (domain) params.set('domain', domain);
-  return fetchKb(`/api/kb/search?${params}`);
+  return fetchKb(`/api/kb/search?${params}`, signal);
 }

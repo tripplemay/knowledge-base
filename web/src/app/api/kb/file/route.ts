@@ -1,12 +1,17 @@
 import fs from 'fs';
 import { Readable } from 'stream';
 import { NextRequest, NextResponse } from 'next/server';
+import { parseRange } from 'lib/kb/range';
 import { getPdfFile } from 'lib/kb/server';
 import type { KbPdfKind } from 'types/kb';
 
 const VALID_KINDS: KbPdfKind[] = ['source', 'zh', 'dual'];
 
-function stream(filePath: string, start?: number, end?: number): ReadableStream {
+function stream(
+  filePath: string,
+  start?: number,
+  end?: number,
+): ReadableStream {
   const nodeStream = fs.createReadStream(filePath, { start, end });
   return Readable.toWeb(nodeStream) as ReadableStream;
 }
@@ -18,7 +23,11 @@ export async function GET(req: NextRequest) {
   const kind = (params.get('file') ?? 'source') as KbPdfKind;
   if (!domain || !slug || !VALID_KINDS.includes(kind)) {
     return NextResponse.json(
-      { success: false, data: null, error: '参数不合法（需 domain、slug，file ∈ source|zh|dual）' },
+      {
+        success: false,
+        data: null,
+        error: '参数不合法（需 domain、slug，file ∈ source|zh|dual）',
+      },
       { status: 400 },
     );
   }
@@ -36,25 +45,21 @@ export async function GET(req: NextRequest) {
     if (req.headers.get('if-none-match') === etag) {
       return new NextResponse(null, { status: 304, headers: common });
     }
-    const range = req.headers.get('range');
-    if (range) {
-      const match = /bytes=(\d*)-(\d*)/.exec(range);
-      const start = match?.[1] ? parseInt(match[1], 10) : 0;
-      const end = match?.[2]
-        ? Math.min(parseInt(match[2], 10), stat.size - 1)
-        : stat.size - 1;
-      if (start >= stat.size || start > end) {
-        return new NextResponse(null, {
-          status: 416,
-          headers: { 'Content-Range': `bytes */${stat.size}` },
-        });
-      }
-      return new NextResponse(stream(filePath, start, end), {
+    const r = parseRange(req.headers.get('range'), stat.size);
+    if (r.kind === 'unsatisfiable') {
+      return new NextResponse(null, {
+        status: 416,
+        // 416 也要带 Accept-Ranges/ETag/Cache-Control
+        headers: { ...common, 'Content-Range': `bytes */${stat.size}` },
+      });
+    }
+    if (r.kind === 'partial') {
+      return new NextResponse(stream(filePath, r.start, r.end), {
         status: 206,
         headers: {
           ...common,
-          'Content-Range': `bytes ${start}-${end}/${stat.size}`,
-          'Content-Length': String(end - start + 1),
+          'Content-Range': `bytes ${r.start}-${r.end}/${stat.size}`,
+          'Content-Length': String(r.end - r.start + 1),
         },
       });
     }
@@ -62,10 +67,18 @@ export async function GET(req: NextRequest) {
       headers: { ...common, 'Content-Length': String(stat.size) },
     });
   } catch (err: any) {
+    // 详细信息（含绝对路径）只留在服务端日志，不回显给客户端
     console.error('[api/kb/file]', err);
+    const notFound =
+      err?.code === 'ENOENT' ||
+      /^(未知知识域|文档不存在|PDF 不存在)/.test(String(err?.message ?? ''));
     return NextResponse.json(
-      { success: false, data: null, error: String(err?.message ?? '读取 PDF 失败') },
-      { status: 404 },
+      {
+        success: false,
+        data: null,
+        error: notFound ? '资源不存在' : '读取文件失败',
+      },
+      { status: notFound ? 404 : 500 },
     );
   }
 }

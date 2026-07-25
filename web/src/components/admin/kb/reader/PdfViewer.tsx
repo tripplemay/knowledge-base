@@ -4,7 +4,6 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { Document, Page, pdfjs } from 'react-pdf';
 import { MdAdd, MdRemove, MdOpenInNew } from 'react-icons/md';
-import 'react-pdf/dist/Page/AnnotationLayer.css';
 import 'react-pdf/dist/Page/TextLayer.css';
 
 pdfjs.GlobalWorkerOptions.workerSrc = new URL(
@@ -38,6 +37,13 @@ function PdfViewer(props: {
     setContainerWidth(el.clientWidth);
     return () => ro.disconnect();
   }, []);
+
+  // url 变化即重置文档级 state（保留用户手调的 zoomIdx 与已测量的 containerWidth）
+  useEffect(() => {
+    setNumPages(0);
+    setAspect(1.414);
+    setVisible(new Set([1, 2]));
+  }, [url]);
 
   // IntersectionObserver 维护可视页集合（±OVERSCAN 页）
   useEffect(() => {
@@ -85,6 +91,9 @@ function PdfViewer(props: {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [numPages, pageHeight]);
 
+  // 现有语料实测全部为 Identity-H 编码（pdf.js worker 内置短路，不需要外部 CMaps），故未配置 cMapUrl。
+  // 若将来接收老旧/Distiller 产出的中文 PDF（Adobe-GB1 等预定义 CMap），需补 public/pdfjs/{cmaps,standard_fonts}
+  // 并配 cMapUrl/cMapPacked/standardFontDataUrl，否则该字体所有字形不渲染（页面不崩，静默掉字）。
   const options = useMemo(() => ({ cMapUrl: undefined }), []);
 
   return (
@@ -98,7 +107,7 @@ function PdfViewer(props: {
           <button
             onClick={() => setZoomIdx(Math.max(0, zoomIdx - 1))}
             disabled={zoomIdx === 0}
-            className="linear flex h-8 w-8 items-center justify-center rounded-lg bg-brand-500 text-white transition duration-200 hover:bg-brand-600 disabled:opacity-40 dark:bg-brand-400"
+            className="linear flex h-8 w-8 items-center justify-center rounded-lg bg-brand-500 text-white transition duration-200 hover:bg-brand-600 active:bg-brand-700 disabled:opacity-40 dark:bg-brand-400 dark:text-white dark:hover:bg-brand-300 dark:active:bg-brand-200"
           >
             <MdRemove />
           </button>
@@ -110,7 +119,7 @@ function PdfViewer(props: {
               setZoomIdx(Math.min(ZOOM_STEPS.length - 1, zoomIdx + 1))
             }
             disabled={zoomIdx === ZOOM_STEPS.length - 1}
-            className="linear flex h-8 w-8 items-center justify-center rounded-lg bg-brand-500 text-white transition duration-200 hover:bg-brand-600 disabled:opacity-40 dark:bg-brand-400"
+            className="linear flex h-8 w-8 items-center justify-center rounded-lg bg-brand-500 text-white transition duration-200 hover:bg-brand-600 active:bg-brand-700 disabled:opacity-40 dark:bg-brand-400 dark:text-white dark:hover:bg-brand-300 dark:active:bg-brand-200"
           >
             <MdAdd />
           </button>
@@ -118,7 +127,7 @@ function PdfViewer(props: {
             href={url}
             target="_blank"
             rel="noreferrer"
-            className="linear ml-2 flex h-8 w-8 items-center justify-center rounded-lg bg-brand-500 text-white transition duration-200 hover:bg-brand-600 dark:bg-brand-400"
+            className="linear ml-2 flex h-8 w-8 items-center justify-center rounded-lg bg-brand-500 text-white transition duration-200 hover:bg-brand-600 active:bg-brand-700 dark:bg-brand-400 dark:text-white dark:hover:bg-brand-300 dark:active:bg-brand-200"
             title="新标签打开"
           >
             <MdOpenInNew />

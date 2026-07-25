@@ -40,7 +40,12 @@ const UploadPage = () => {
         <h5 className="mb-4 text-lg font-bold text-navy-700 dark:text-white">
           上传文档到知识库
         </h5>
-        <UploadDropzone onFile={setFile} fileName={file?.name} />
+        <UploadDropzone
+          onFile={setFile}
+          onReject={(m) => setError(m || null)}
+          fileName={file?.name}
+          disabled={submitting}
+        />
         <div className="mt-4 grid grid-cols-1 gap-3 md:grid-cols-2">
           <div>
             <label className="ml-1.5 text-sm font-bold text-navy-700 dark:text-white">

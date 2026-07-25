@@ -66,3 +66,26 @@ export interface KbApiResponse<T> {
   data: T | null;
   error: string | null;
 }
+
+/** 知识图谱实体节点（LightRAG 导出） */
+export interface KgNode {
+  id: string;
+  type?: string;
+  degree: number;
+  description?: string;
+  source?: string; // 后端用 '<SEP>' 连接多个出处
+}
+
+/** 知识图谱关系边 */
+export interface KgLink {
+  source: string;
+  target: string;
+}
+
+/** 图谱接口返回体：按度数截断后的子图 + 全图规模 */
+export interface KgGraph {
+  nodes: KgNode[];
+  links: KgLink[];
+  total_nodes: number;
+  total_edges: number;
+}

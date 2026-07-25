@@ -34,6 +34,9 @@ const STAGE_ORDER = [
   'layout',
 ];
 
+/** chunk_done 高频事件的刷新节流间隔 */
+const RELOAD_THROTTLE_MS = 2000;
+
 /** stage_done 载荷（classify 用于展示判定理由） */
 function stageDetail(stage: Pick<KbJobStage, 'detail'>): any {
   try {
@@ -71,35 +74,63 @@ const JobDetailPage = () => {
   const [job, setJob] = useState<KbJobDetail | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [translateTotal, setTranslateTotal] = useState(0);
-  const esRef = useRef<EventSource | null>(null);
+  const [translateDone, setTranslateDone] = useState(0);
+  /** 上一次 reload 的「发起时刻」，节流基线 */
+  const lastReload = useRef(0);
+  /** 请求序号：只接受最新一次请求的结果，防止慢响应把旧快照写回 */
+  const reqSeq = useRef(0);
+  /** 当前任务 id：取消/重试的回调会捕获旧 jobId 的 reload，跨任务导航后必须作废 */
+  const activeJobId = useRef(jobId);
 
   const reload = useCallback(() => {
-    fetchJob(jobId)
+    // 基线统一取发起时刻（写在 .then 里会让实际窗口变成 2s + 一次 RTT）
+    lastReload.current = Date.now();
+    const seq = ++reqSeq.current;
+    const id = jobId;
+    const accept = () => seq === reqSeq.current && id === activeJobId.current;
+    fetchJob(id)
       .then((data) => {
+        if (!accept()) return;
         setJob(data);
         setError(null);
       })
-      .catch((err: Error) => setError(err.message));
+      .catch((err: Error) => {
+        if (!accept()) return;
+        setError(err.message);
+      });
   }, [jobId]);
+
+  /** 分块完成事件每块一发，节流后再拉详情，避免逐块全量刷新 */
+  const reloadThrottled = useCallback(() => {
+    if (Date.now() - lastReload.current < RELOAD_THROTTLE_MS) return;
+    reload();
+  }, [reload]);
 
   useEffect(() => {
     if (!jobId) return;
+    activeJobId.current = jobId;
+    // 切任务时清掉上一个任务残留的块计数与节流基线
+    setTranslateTotal(0);
+    setTranslateDone(0);
+    lastReload.current = 0;
+    // 这一发 reload 会按新任务的发起时刻重新落基线，
+    // 且序号自增使上一个任务的在途请求作废
     reload();
     const es = new EventSource(jobEventsUrl(jobId));
-    esRef.current = es;
     es.onmessage = (msg) => {
       try {
         const event = JSON.parse(msg.data);
         if (event.type === 'progress' && event.stage === 'translate') {
           setTranslateTotal(event.total ?? 0);
+          setTranslateDone(event.current ?? 0);
         }
-        // stage 边界与 chunk 完成时刷新详情
-        if (
-          ['stage_start', 'stage_done', 'chunk_done', 'error'].includes(
-            event.type,
-          )
-        ) {
+        // stage 边界与出错时刷新详情（classify 的判定理由只在 stage_done 落库）
+        if (['stage_start', 'stage_done', 'error'].includes(event.type)) {
           reload();
+        }
+        // 分块完成走节流，「分块用量」保持准实时即可
+        if (event.type === 'chunk_done') {
+          reloadThrottled();
         }
       } catch {
         /* 忽略非 JSON 心跳 */
@@ -113,7 +144,7 @@ const JobDetailPage = () => {
       /* EventSource 自动重连（Last-Event-ID 补发） */
     };
     return () => es.close();
-  }, [jobId, reload]);
+  }, [jobId, reload, reloadThrottled]);
 
   const act = async (fn: (id: string) => Promise<unknown>) => {
     try {
@@ -127,7 +158,11 @@ const JobDetailPage = () => {
   if (error && !job) return <KbError message={error} />;
   if (!job) return <KbLoading />;
 
-  const doneChunks = job.chunks.filter((c) => c.status === 'done').length;
+  // 中途进入页面时已错过 progress 事件，用 chunks 落库数兜底
+  const doneChunks = Math.max(
+    translateDone,
+    job.chunks.filter((c) => c.status === 'done').length,
+  );
   const totalChunks = Math.max(translateTotal, job.chunks.length);
   const stages = STAGE_ORDER.map(
     (name) =>
@@ -205,7 +240,7 @@ const JobDetailPage = () => {
             {['queued', 'running'].includes(job.status) ? (
               <button
                 onClick={() => act(cancelJob)}
-                className="linear rounded-lg bg-red-500 px-3 py-2.5 text-sm font-medium text-white transition duration-200 hover:bg-red-600 active:bg-red-700"
+                className="linear rounded-lg bg-red-500 px-3 py-2.5 text-sm font-medium text-white transition duration-200 hover:bg-red-600 active:bg-red-700 dark:bg-red-400 dark:text-white dark:hover:bg-red-300 dark:active:bg-red-200"
               >
                 取消任务
               </button>
@@ -221,7 +256,8 @@ const JobDetailPage = () => {
             {job.status === 'done' ? (
               <NavLink
                 href={`/admin/kb/${job.domain}`}
-                className="linear rounded-lg bg-brand-500 px-3 py-2.5 text-sm font-medium text-white transition duration-200 hover:bg-brand-600 active:bg-brand-700 dark:bg-brand-400 dark:text-white dark:hover:bg-brand-300 dark:active:bg-brand-200"
+                borderRadius="8px"
+                className="linear bg-brand-500 px-3 py-2.5 text-sm font-medium text-white transition duration-200 hover:bg-brand-600 active:bg-brand-700 dark:bg-brand-400 dark:text-white dark:hover:bg-brand-300 dark:active:bg-brand-200"
               >
                 查看文档
               </NavLink>

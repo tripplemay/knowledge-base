@@ -5,7 +5,6 @@ import { useEffect, useState } from 'react';
 import NavLink from 'components/link/NavLink';
 import Card from 'components/card';
 import SearchIcon from 'components/icons/SearchIcon';
-import { KbError } from 'components/admin/kb/KbState';
 import { fetchSearch } from 'lib/kb/client';
 import type { KbSearchHit } from 'types/kb';
 
@@ -22,22 +21,37 @@ const SearchPage = () => {
     if (query.trim().length < MIN_QUERY_LEN) {
       setHits(null);
       setError(null);
+      // 关键词不足时必须复位 loading，否则页面会卡在「搜索中…」的假加载态
+      setLoading(false);
       return;
     }
+    // 连打字时：cancelled 拦住迟到的 setState，ac.abort() 取消已发出的在途请求
+    const ac = new AbortController();
+    let cancelled = false;
     setLoading(true);
     const timer = setTimeout(() => {
-      fetchSearch(query)
+      fetchSearch(query, undefined, ac.signal)
         .then((data) => {
-          setHits(data);
-          setError(null);
+          if (!cancelled) {
+            setHits(data);
+            setError(null);
+          }
         })
         .catch((err: Error) => {
+          // abort 触发的 rejection 不是真错误，不能落到 error 上
+          if (cancelled || err.name === 'AbortError') return;
           setError(err.message);
           setHits(null);
         })
-        .finally(() => setLoading(false));
+        .finally(() => {
+          if (!cancelled) setLoading(false);
+        });
     }, DEBOUNCE_MS);
-    return () => clearTimeout(timer);
+    return () => {
+      cancelled = true;
+      clearTimeout(timer);
+      ac.abort();
+    };
   }, [query]);
 
   return (
@@ -57,7 +71,10 @@ const SearchPage = () => {
         </div>
 
         <div className="mt-8">
-          {error ? <KbError message={error} /> : null}
+          {/* 错误以行内红字呈现：本处已在 Card 内，再用 KbError 会形成卡中卡 */}
+          {error ? (
+            <p className="mb-2 text-sm font-bold text-red-500">{error}</p>
+          ) : null}
           {loading ? (
             <p className="text-sm font-medium text-gray-600">搜索中…</p>
           ) : null}
@@ -66,9 +83,9 @@ const SearchPage = () => {
               <h5 className="text-lg font-bold text-navy-700 dark:text-white">
                 {hits.length} 条结果
               </h5>
-              {hits.map((hit, i) => (
+              {hits.map((hit) => (
                 <NavLink
-                  key={i}
+                  key={`${hit.domain}/${hit.slug}#${hit.line}`}
                   href={`/admin/kb/${hit.domain}/${hit.slug}`}
                   className="mt-2 block px-1 py-2 hover:cursor-pointer"
                 >
