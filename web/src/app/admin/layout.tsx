@@ -10,7 +10,10 @@ import {
   isWindowAvailable,
 } from 'utils/navigation';
 import React from 'react';
-import { Portal } from '@chakra-ui/portal';
+// 用 React 原生 createPortal 取代 @chakra-ui/portal：后者是 admin 布局里
+// 唯一的静态 Chakra 引用，会把 chakra + @emotion 运行时算进每个页面的首屏 JS。
+// 本布局是 'use client' 且整站经 AppWrappers 关闭了 SSR，渲染时 document 必然存在。
+import { createPortal } from 'react-dom';
 import Navbar from 'components/navbar';
 import Sidebar from 'components/sidebar';
 import Footer from 'components/footer/Footer';
@@ -49,18 +52,21 @@ export default function Admin({ children }: { children: React.ReactNode }) {
         >
           {/* Routes */}
           <div>
-            <Portal>
-              <Navbar
-                onOpenSidenav={() => setOpen(!open)}
-                brandText={getActiveRoute(routes, pathname)}
-                secondary={getActiveNavbar(routes, pathname)}
-                theme={theme}
-                setTheme={setTheme}
-                hovered={hovered}
-                mini={mini}
-                setMini={setMini}
-              />
-            </Portal>
+            {isWindowAvailable()
+              ? createPortal(
+                  <Navbar
+                    onOpenSidenav={() => setOpen(!open)}
+                    brandText={getActiveRoute(routes, pathname)}
+                    secondary={getActiveNavbar(routes, pathname)}
+                    theme={theme}
+                    setTheme={setTheme}
+                    hovered={hovered}
+                    mini={mini}
+                    setMini={setMini}
+                  />,
+                  document.body,
+                )
+              : null}
             <div className="mx-auto min-h-screen p-2 !pt-[100px] md:p-2">
               {children}
             </div>

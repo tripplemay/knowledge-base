@@ -5,9 +5,12 @@ import NavLink from 'components/link/NavLink';
 import navbarimage from '/public/img/layout/Navbar.png';
 import { BsArrowBarUp } from 'react-icons/bs';
 import { FiSearch } from 'react-icons/fi';
-import Configurator from './Configurator';
+import dynamic from 'next/dynamic';
+// 主题调试器改为动态加载：它是整个 admin 布局里唯一的 Chakra 消费方
+// （@chakra-ui/modal 的 Drawer + hooks，并连带 @emotion/* 与 framer-motion），
+// 静态引入会把这一整条运行时算进每个页面的首屏 JS。
+const Configurator = dynamic(() => import('./Configurator'), { ssr: false });
 // import { RiMoonFill, RiSunFill } from 'react-icons/ri';
-// import Configurator from './Configurator';
 import {
   IoMdNotificationsOutline,
   IoMdInformationCircleOutline,
