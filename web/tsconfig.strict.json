@@ -1,0 +1,19 @@
+{
+  "extends": "./tsconfig.json",
+  "compilerOptions": {
+    "strict": true,
+    "noImplicitAny": true,
+    "strictNullChecks": true,
+    "incremental": false
+  },
+  "include": [
+    "src/app/admin/kb/**/*",
+    "src/app/api/kb/**/*",
+    "src/app/api/v1/**/*",
+    "src/components/admin/kb/**/*",
+    "src/lib/kb/**/*",
+    "src/types/kb.d.ts",
+    "src/types/ingest.d.ts",
+    "next-env.d.ts"
+  ]
+}

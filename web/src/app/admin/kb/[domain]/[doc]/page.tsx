@@ -99,8 +99,13 @@ const DocReaderPage = () => {
               </h5>
             </div>
             <div className="h-[76vh] overflow-auto pr-1">
+              {/* error 必须单独判：漏判会把取数失败说成"本页无正文"，故障被伪装成空数据 */}
               {pagesState.loading ? (
                 <p className="text-sm font-medium text-gray-600">加载中…</p>
+              ) : pagesState.error ? (
+                <p className="text-sm font-bold text-red-500">
+                  按页译文加载失败：{pagesState.error}
+                </p>
               ) : pageZh ? (
                 <MarkdownReader markdown={pageZh} />
               ) : (

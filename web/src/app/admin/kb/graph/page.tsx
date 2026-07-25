@@ -15,7 +15,7 @@ const ForceGraph2D = dynamic(() => import('react-force-graph-2d'), {
 
 // 取自模板调色板：#4318FF=blueSecondary、#FFB547=horizonOrange-500、#868CFF=brandLinear
 // #05CD99 / #EE5D50 = tailwind.config 里 green-50 / red-50 的不透明原色
-// #39B8FF = 模板 variables/charts.ts 的图表副色
+// #39B8FF 取自模板图表副色（原 variables/charts.ts，已随死代码清理删除）
 const TYPE_COLORS: Record<string, string> = {
   concept: '#4318FF',
   organization: '#05CD99',

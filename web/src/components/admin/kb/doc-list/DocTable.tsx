@@ -5,6 +5,8 @@ import React from 'react';
 import NavLink from 'components/link/NavLink';
 import Card from 'components/card';
 import SearchIcon from 'components/icons/SearchIcon';
+import { KbEmpty } from 'components/admin/kb/KbState';
+import { fmtDate } from 'lib/kb/format';
 import { MdChevronRight, MdChevronLeft } from 'react-icons/md';
 import type { KbDocSummary } from 'types/kb';
 
@@ -26,88 +28,95 @@ const headerCell = (text: string) => (
   <p className="text-sm font-bold text-gray-600 dark:text-white">{text}</p>
 );
 
-function DocTable(props: { tableData: KbDocSummary[] }) {
-  const { tableData } = props;
+/** 分页条最多显示的页码按钮数（超出走滑窗，避免文档变多后按钮撑破工具条） */
+const PAGE_WINDOW_SIZE = 5;
+
+const PAGE_SIZE_OPTIONS = [10, 20, 50];
+
+function DocTable(props: {
+  tableData: KbDocSummary[];
+  /** 必须取自 PAGE_SIZE_OPTIONS：不在选项里的值会让 select 显示第一项而实际每页 N 条 */
+  defaultPageSize?: (typeof PAGE_SIZE_OPTIONS)[number];
+}) {
+  const { tableData, defaultPageSize = 10 } = props;
   const [columnFilters, setColumnFilters] = React.useState<ColumnFiltersState>(
     [],
   );
   const [globalFilter, setGlobalFilter] = React.useState('');
-  const createPages = (count: number) => {
-    let arrPageCount = [];
-    for (let i = 1; i <= count; i++) {
-      arrPageCount.push(i);
-    }
-    return arrPageCount;
-  };
-  const columns = [
-    columnHelper.accessor('title', {
-      id: 'title',
-      header: () => headerCell('文档'),
-      cell: (info) => (
-        <NavLink
-          href={`/admin/kb/${info.row.original.domain}/${info.row.original.slug}`}
-          className="font-medium text-navy-700 hover:text-brand-500 dark:text-white dark:hover:text-brand-400"
-        >
-          {info.getValue()}
-          <p className="text-xs font-normal text-gray-600">
-            {info.row.original.sourceFile}
+  // 空依赖是刻意的：下面每个 cell 只读 info / info.row.original，不闭包任何 props 或 state。
+  // 将来若某个 cell 需要引用 props/state，必须同步把它加进依赖数组，否则会拿到过期闭包。
+  const columns = React.useMemo(
+    () => [
+      columnHelper.accessor('title', {
+        id: 'title',
+        header: () => headerCell('文档'),
+        cell: (info) => (
+          <NavLink
+            href={`/admin/kb/${info.row.original.domain}/${info.row.original.slug}`}
+            className="font-medium text-navy-700 hover:text-brand-500 dark:text-white dark:hover:text-brand-400"
+          >
+            {info.getValue()}
+            <p className="text-xs font-normal text-gray-600">
+              {info.row.original.sourceFile}
+            </p>
+          </NavLink>
+        ),
+      }),
+      columnHelper.accessor('ingestedAt', {
+        id: 'ingestedAt',
+        header: () => headerCell('摄取时间'),
+        cell: (info) => (
+          <p className="text-sm font-bold text-navy-700 dark:text-white">
+            {fmtDate(info.getValue())}
           </p>
-        </NavLink>
-      ),
-    }),
-    columnHelper.accessor('ingestedAt', {
-      id: 'ingestedAt',
-      header: () => headerCell('摄取时间'),
-      cell: (info) => (
-        <p className="text-sm font-bold text-navy-700 dark:text-white">
-          {String(info.getValue()).slice(0, 10)}
-        </p>
-      ),
-    }),
-    columnHelper.accessor('chunks', {
-      id: 'chunks',
-      header: () => headerCell('分块'),
-      cell: (info) => (
-        <p className="text-sm font-bold text-navy-700 dark:text-white">
-          {info.getValue()}
-        </p>
-      ),
-    }),
-    columnHelper.accessor('termCount', {
-      id: 'termCount',
-      header: () => headerCell('术语'),
-      cell: (info) => (
-        <p className="text-sm font-bold text-navy-700 dark:text-white">
-          {info.getValue()}
-        </p>
-      ),
-    }),
-    columnHelper.accessor('costUsd', {
-      id: 'costUsd',
-      header: () => headerCell('成本'),
-      cell: (info) => (
-        <p className="text-sm font-bold text-navy-700 dark:text-white">
-          ${Number(info.getValue()).toFixed(4)}
-        </p>
-      ),
-    }),
-    columnHelper.accessor('slug', {
-      id: 'actions',
-      header: () => headerCell('操作'),
-      cell: (info) => (
-        <NavLink
-          href={`/admin/kb/${info.row.original.domain}/${info.getValue()}`}
-          className="cursor-pointer font-medium text-brand-500 dark:text-brand-400"
-        >
-          阅读
-        </NavLink>
-      ),
-    }),
-  ];
+        ),
+      }),
+      columnHelper.accessor('chunks', {
+        id: 'chunks',
+        header: () => headerCell('分块'),
+        cell: (info) => (
+          <p className="text-sm font-bold text-navy-700 dark:text-white">
+            {info.getValue()}
+          </p>
+        ),
+      }),
+      columnHelper.accessor('termCount', {
+        id: 'termCount',
+        header: () => headerCell('术语'),
+        cell: (info) => (
+          <p className="text-sm font-bold text-navy-700 dark:text-white">
+            {info.getValue()}
+          </p>
+        ),
+      }),
+      columnHelper.accessor('costUsd', {
+        id: 'costUsd',
+        header: () => headerCell('成本'),
+        cell: (info) => (
+          <p className="text-sm font-bold text-navy-700 dark:text-white">
+            ${Number(info.getValue()).toFixed(4)}
+          </p>
+        ),
+      }),
+      columnHelper.accessor('slug', {
+        id: 'actions',
+        header: () => headerCell('操作'),
+        cell: (info) => (
+          <NavLink
+            href={`/admin/kb/${info.row.original.domain}/${info.getValue()}`}
+            className="cursor-pointer font-medium text-brand-500 dark:text-brand-400"
+          >
+            阅读
+          </NavLink>
+        ),
+      }),
+    ],
+    [],
+  );
   const [{ pageIndex, pageSize }, setPagination] =
     React.useState<PaginationState>({
       pageIndex: 0,
-      pageSize: 6,
+      pageSize: defaultPageSize,
     });
 
   const pagination = React.useMemo(
@@ -130,6 +139,23 @@ function DocTable(props: { tableData: KbDocSummary[] }) {
     getSortedRowModel: getSortedRowModel(),
     getPaginationRowModel: getPaginationRowModel(),
   });
+
+  // 页码滑窗：始终以当前页为中心最多渲染 PAGE_WINDOW_SIZE 个按钮，
+  // 原实现每页一个按钮，文档上百篇时会把工具条撑破
+  const pageCount = table.getPageCount();
+  const pageWindow = React.useMemo(() => {
+    const half = Math.floor(PAGE_WINDOW_SIZE / 2);
+    const cur = pageIndex + 1;
+    const start = Math.max(
+      1,
+      Math.min(cur - half, pageCount - PAGE_WINDOW_SIZE + 1),
+    );
+    const end = Math.min(pageCount, Math.max(cur + half, PAGE_WINDOW_SIZE));
+    return Array.from(
+      { length: Math.max(0, end - start + 1) },
+      (_, i) => start + i,
+    );
+  }, [pageIndex, pageCount]);
 
   return (
     <Card extra={'w-full h-full sm:overflow-auto px-6'}>
@@ -172,28 +198,50 @@ function DocTable(props: { tableData: KbDocSummary[] }) {
             ))}
           </thead>
           <tbody>
-            {table.getRowModel().rows.map((row) => {
-              return (
-                <tr
-                  key={row.id}
-                  className="border-b border-gray-200 dark:border-white/30"
+            {table.getRowModel().rows.length === 0 ? (
+              <tr>
+                {/* 用可见列数而非硬编码，日后加列不会错位 */}
+                <td
+                  colSpan={table.getVisibleFlatColumns().length}
+                  className="border-white/0"
                 >
-                  {row.getVisibleCells().map((cell) => {
-                    return (
-                      <td
-                        key={cell.id}
-                        className="min-w-[120px] border-white/0 py-3 pr-4"
-                      >
-                        {flexRender(
-                          cell.column.columnDef.cell,
-                          cell.getContext(),
-                        )}
-                      </td>
-                    );
-                  })}
-                </tr>
-              );
-            })}
+                  <KbEmpty
+                    inline
+                    message={
+                      globalFilter ? '没有匹配的文档' : '该知识域暂无文档'
+                    }
+                    hint={
+                      globalFilter
+                        ? '换个关键词试试'
+                        : '从「上传文档」摄取第一篇后会出现在这里'
+                    }
+                  />
+                </td>
+              </tr>
+            ) : (
+              table.getRowModel().rows.map((row) => {
+                return (
+                  <tr
+                    key={row.id}
+                    className="border-b border-gray-200 dark:border-white/30"
+                  >
+                    {row.getVisibleCells().map((cell) => {
+                      return (
+                        <td
+                          key={cell.id}
+                          className="min-w-[120px] border-white/0 py-3 pr-4"
+                        >
+                          {flexRender(
+                            cell.column.columnDef.cell,
+                            cell.getContext(),
+                          )}
+                        </td>
+                      );
+                    })}
+                  </tr>
+                );
+              })
+            )}
           </tbody>
         </table>
         {/* pagination */}
@@ -202,6 +250,18 @@ function DocTable(props: { tableData: KbDocSummary[] }) {
             <p className="text-sm text-gray-700">
               共 {tableData.length} 份文档
             </p>
+            <select
+              value={pageSize}
+              onChange={(e) => table.setPageSize(Number(e.target.value))}
+              aria-label="每页条数"
+              className="flex h-10 items-center rounded-xl border border-gray-200 bg-white/0 px-2 text-sm text-navy-700 outline-none dark:!border-white/10 dark:text-white [&>option]:dark:bg-navy-800"
+            >
+              {PAGE_SIZE_OPTIONS.map((size) => (
+                <option key={size} value={size}>
+                  每页 {size} 条
+                </option>
+              ))}
+            </select>
           </div>
           <div className="flex items-center gap-2">
             <button
@@ -211,7 +271,7 @@ function DocTable(props: { tableData: KbDocSummary[] }) {
             >
               <MdChevronLeft />
             </button>
-            {createPages(table.getPageCount()).map((pageNumber, index) => {
+            {pageWindow.map((pageNumber) => {
               return (
                 <button
                   className={`linear flex h-10 w-10 items-center justify-center rounded-full p-2 text-sm transition duration-200 ${
@@ -220,7 +280,7 @@ function DocTable(props: { tableData: KbDocSummary[] }) {
                       : 'border-[1px] border-gray-400 bg-[transparent] dark:border-white dark:text-white'
                   }`}
                   onClick={() => table.setPageIndex(pageNumber - 1)}
-                  key={index}
+                  key={pageNumber}
                 >
                   {pageNumber}
                 </button>

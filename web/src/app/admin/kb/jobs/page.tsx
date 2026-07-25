@@ -4,7 +4,7 @@ import { useEffect, useState } from 'react';
 import NavLink from 'components/link/NavLink';
 import Card from 'components/card';
 import JobStatusBadge from 'components/admin/kb/jobs/JobStatusBadge';
-import { KbError, KbLoading } from 'components/admin/kb/KbState';
+import { KbEmpty, KbError, KbLoading } from 'components/admin/kb/KbState';
 import { domainLabel, fetchJobs } from 'lib/kb/ingest';
 import type { KbJobSummary } from 'types/ingest';
 
@@ -81,7 +81,8 @@ const JobsPage = () => {
       <Card extra="w-full !p-6">
         <div className="flex items-center justify-between">
           <h5 className="text-lg font-bold text-navy-700 dark:text-white">
-            摄取任务（{jobs.length}）
+            {/* 后端 list_jobs 恒定截断到 50 条，写成总数会误导 */}
+            摄取任务（最近 {jobs.length} 条）
           </h5>
           <NavLink
             href="/admin/kb/upload"
@@ -113,50 +114,63 @@ const JobsPage = () => {
               </tr>
             </thead>
             <tbody>
-              {jobs.map((job) => (
-                <tr
-                  key={job.id}
-                  className="border-b border-gray-200 dark:border-white/30"
-                >
-                  <td className="min-w-[150px] py-3 pr-4">
-                    <NavLink
-                      href={`/admin/kb/jobs/${job.id}`}
-                      className="font-medium text-navy-700 hover:text-brand-500 dark:text-white dark:hover:text-brand-400"
-                    >
-                      {job.filename}
-                      <p className="text-xs font-normal text-gray-600">
-                        {job.slug}
-                      </p>
-                    </NavLink>
-                  </td>
-                  <td className="py-3 pr-4">
-                    <p className="text-sm font-bold text-navy-700 dark:text-white">
-                      {domainLabel(job.domain)}
-                    </p>
-                  </td>
-                  <td className="py-3 pr-4">
-                    <JobStatusBadge status={job.status} />
-                  </td>
-                  <td className="py-3 pr-4">
-                    <p className="text-sm font-bold text-navy-700 dark:text-white">
-                      ${(job.cost_usd ?? 0).toFixed(4)}
-                    </p>
-                  </td>
-                  <td className="py-3 pr-4">
-                    <p className="text-sm font-bold text-navy-700 dark:text-white">
-                      {fmtTime(job.created_at)}
-                    </p>
-                  </td>
-                  <td className="py-3 pr-4">
-                    <NavLink
-                      href={`/admin/kb/jobs/${job.id}`}
-                      className="font-medium text-brand-500 dark:text-brand-400"
-                    >
-                      详情
-                    </NavLink>
+              {jobs.length === 0 ? (
+                <tr>
+                  {/* colSpan 对应上方表头数组的 6 列 */}
+                  <td colSpan={6} className="border-white/0">
+                    <KbEmpty
+                      inline
+                      message="还没有摄取任务"
+                      hint="点右上角「上传新文档」开始第一个任务"
+                    />
                   </td>
                 </tr>
-              ))}
+              ) : (
+                jobs.map((job) => (
+                  <tr
+                    key={job.id}
+                    className="border-b border-gray-200 dark:border-white/30"
+                  >
+                    <td className="min-w-[150px] py-3 pr-4">
+                      <NavLink
+                        href={`/admin/kb/jobs/${job.id}`}
+                        className="font-medium text-navy-700 hover:text-brand-500 dark:text-white dark:hover:text-brand-400"
+                      >
+                        {job.filename}
+                        <p className="text-xs font-normal text-gray-600">
+                          {job.slug}
+                        </p>
+                      </NavLink>
+                    </td>
+                    <td className="py-3 pr-4">
+                      <p className="text-sm font-bold text-navy-700 dark:text-white">
+                        {domainLabel(job.domain)}
+                      </p>
+                    </td>
+                    <td className="py-3 pr-4">
+                      <JobStatusBadge status={job.status} />
+                    </td>
+                    <td className="py-3 pr-4">
+                      <p className="text-sm font-bold text-navy-700 dark:text-white">
+                        ${(job.cost_usd ?? 0).toFixed(4)}
+                      </p>
+                    </td>
+                    <td className="py-3 pr-4">
+                      <p className="text-sm font-bold text-navy-700 dark:text-white">
+                        {fmtTime(job.created_at)}
+                      </p>
+                    </td>
+                    <td className="py-3 pr-4">
+                      <NavLink
+                        href={`/admin/kb/jobs/${job.id}`}
+                        className="font-medium text-brand-500 dark:text-brand-400"
+                      >
+                        详情
+                      </NavLink>
+                    </td>
+                  </tr>
+                ))
+              )}
             </tbody>
           </table>
         </div>

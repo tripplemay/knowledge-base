@@ -1,4 +1,5 @@
 // Markdown 渲染器 —— 模板无内容渲染能力，统一在此封装（全站唯一入口）
+import { memo } from 'react';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 
@@ -11,4 +12,5 @@ function MarkdownReader(props: { markdown: string }) {
   );
 }
 
-export default MarkdownReader;
+// props 只有一个 string，浅比较天然正确：父组件因视图切换等原因重渲染时可跳过重新解析
+export default memo(MarkdownReader);

@@ -1,5 +1,6 @@
 // 文档元信息侧栏 —— 基于模板 Card 容器；行间不加分隔线（模板列表惯例：间距分隔）
 import Card from 'components/card';
+import { fmtDate } from 'lib/kb/format';
 import type { KbDocSummary } from 'types/kb';
 
 function MetaRow(props: { label: string; value: string }) {
@@ -20,7 +21,8 @@ function DocMetaPanel(props: { meta: KbDocSummary }) {
         文档信息
       </h5>
       <MetaRow label="源文件" value={meta.sourceFile || '—'} />
-      <MetaRow label="摄取时间" value={meta.ingestedAt.slice(0, 10) || '—'} />
+      {/* 与 DocTable 同一套格式化：ingested_at 非字符串时也不会崩组件 */}
+      <MetaRow label="摄取时间" value={fmtDate(meta.ingestedAt)} />
       <MetaRow label="分块数" value={String(meta.chunks)} />
       <MetaRow label="术语数" value={String(meta.termCount)} />
       <MetaRow label="翻译成本" value={`$${meta.costUsd.toFixed(4)}`} />

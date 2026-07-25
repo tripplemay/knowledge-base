@@ -1,5 +1,6 @@
 // 阅读视图切换 —— 逐类复刻模板 course-page CourseInfo 的 tab 实现
 // （非激活项用同宽白色底边占位，避免切换时内容跳动；激活项 brand 底边）
+// 相对模板 CourseInfo 的唯一偏离：div→button 以支持键盘（类名一字未改，视觉零变化）
 import type { KbReaderView } from 'types/kb';
 
 const LABELS: Record<KbReaderView, string> = {
@@ -19,10 +20,13 @@ function LangTabs(props: {
 }) {
   const { views, active, onChange } = props;
   return (
-    <div className="mb-4 flex w-full items-center gap-8">
+    <div className="mb-4 flex w-full items-center gap-8" role="tablist">
       {views.map((v) => (
-        <div
+        <button
           key={v}
+          type="button"
+          role="tab"
+          aria-selected={active === v}
           className={
             active === v
               ? 'flex items-center gap-3 border-b-[4px] border-brand-500 pb-3 hover:cursor-pointer dark:border-brand-400'
@@ -33,7 +37,7 @@ function LangTabs(props: {
           <p className="text-[18px] font-medium text-navy-700 dark:text-white">
             {LABELS[v]}
           </p>
-        </div>
+        </button>
       ))}
     </div>
   );

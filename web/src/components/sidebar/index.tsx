@@ -3,7 +3,6 @@
 import { HiX } from 'react-icons/hi';
 import Links from './components/Links';
 
-import SidebarCard from 'components/sidebar/components/SidebarCard';
 import {
   renderThumb,
   renderTrack,
@@ -11,12 +10,10 @@ import {
   renderViewMini,
 } from 'components/scrollbar/Scrollbar';
 import { Scrollbars } from 'react-custom-scrollbars-2';
-import avatar4 from '/public/img/avatars/avatar4.png';
 import Card from 'components/card';
 import { IRoute } from 'types/navigation';
 import { useContext } from 'react';
 import { ConfiguratorContext } from 'contexts/ConfiguratorContext';
-import Image from 'next/image';
 
 function SidebarHorizon(props: { routes: IRoute[]; [x: string]: any }) {
   const { routes, open, setOpen, variant, setHovered, hovered } = props;
@@ -89,39 +86,8 @@ function SidebarHorizon(props: { routes: IRoute[]; [x: string]: any }) {
                 <Links mini={mini} hovered={hovered} routes={routes} />
               </ul>
             </div>
-            {/* Free Horizon Card    */}
-            <div className="mb-[30px] mt-[28px]">
-              <div className="flex justify-center">
-                <SidebarCard mini={mini} hovered={hovered} />
-              </div>
-              {/* Sidebar profile info */}
-              <div className="mt-5 flex items-center justify-center gap-3">
-                <div className="relative h-12 w-12 rounded-full bg-blue-200">
-                  <Image
-                    fill
-                    src={avatar4}
-                    className="rounded-full"
-                    alt="avatar"
-                  />
-                </div>
-                <div
-                  className={`ml-1 ${
-                    mini === false
-                      ? 'block'
-                      : mini === true && hovered === true
-                      ? 'block'
-                      : 'block xl:hidden'
-                  }`}
-                >
-                  <h4 className="text-base font-bold text-navy-700 dark:text-white">
-                    Adela Parkson
-                  </h4>
-                  <p className="text-sm font-medium text-gray-600">
-                    Product Designer
-                  </p>
-                </div>
-              </div>
-            </div>
+            {/* 模板底部区块整体移除：促销卡（引 apexcharts 进每页首屏）与
+                「Adela Parkson / Product Designer」假身份都与本项目无关 */}
           </div>
         </Scrollbars>
       </Card>

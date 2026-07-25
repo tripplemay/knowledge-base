@@ -25,13 +25,19 @@ function evictIfNeeded() {
   }
 }
 
-/** 目标的版本指纹；目标不存在返回 null */
+/**
+ * 目标的版本指纹；目标不存在返回 null。
+ * 只有 ENOENT/ENOTDIR 才算"不存在"——EACCES、KB_ROOT 配错等故障必须抛出去，
+ * 否则上层会把它当成空数据，页面显示"还没有知识域"而真实原因被吞掉。
+ */
 async function versionOf(target: string): Promise<string | null> {
   try {
     const st = await stat(target, { bigint: true }); // ns 精度，避免同毫秒改写漏判
     return `${st.mtimeNs}:${st.size}:${st.ino}`; // BigInt 只做字符串拼接，不参与算术
-  } catch {
-    return null;
+  } catch (err) {
+    const code = (err as NodeJS.ErrnoException).code;
+    if (code === 'ENOENT' || code === 'ENOTDIR') return null;
+    throw err;
   }
 }
 

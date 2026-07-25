@@ -6,7 +6,8 @@
     "dev": "next dev -p 3456",
     "build": "next build",
     "start": "next start -p 3456",
-    "lint": "next lint"
+    "lint": "next lint",
+    "typecheck:kb": "tsc -p tsconfig.strict.json --noEmit"
   },
   "dependencies": {
     "@chakra-ui/accordion": "^2.1.4",
@@ -18,12 +19,10 @@
     "@emotion/styled": "^11.10.5",
     "@tailwindcss/typography": "^0.5.20",
     "@tanstack/react-table": "^8.7.9",
-    "apexcharts": "3.35.5",
     "framer-motion": "^7.10.2",
     "js-yaml": "^5.2.2",
     "next": "^15.1.5",
     "react": "19.2.8",
-    "react-apexcharts": "1.4.0",
     "react-custom-scrollbars-2": "^4.5.0",
     "react-dom": "19.2.8",
     "react-dropzone": "^14.2.3",

@@ -14,7 +14,12 @@ import {
   jobEventsUrl,
   retryJob,
 } from 'lib/kb/ingest';
-import type { KbJobDetail, KbJobStage } from 'types/ingest';
+import type {
+  KbClassifyDetail,
+  KbIngestEvent,
+  KbJobDetail,
+  KbJobStage,
+} from 'types/ingest';
 
 const STAGE_LABELS: Record<string, string> = {
   parse: '解析分块',
@@ -38,16 +43,19 @@ const STAGE_ORDER = [
 const RELOAD_THROTTLE_MS = 2000;
 
 /** stage_done 载荷（classify 用于展示判定理由） */
-function stageDetail(stage: Pick<KbJobStage, 'detail'>): any {
+function stageDetail(
+  stage: Pick<KbJobStage, 'detail'>,
+): KbClassifyDetail | null {
   try {
-    return stage.detail ? JSON.parse(stage.detail) : null;
+    return stage.detail ? (JSON.parse(stage.detail) as KbClassifyDetail) : null;
   } catch {
+    // error 事件写入的 detail 是纯文本原因，解析失败按无载荷处理
     return null;
   }
 }
 
 /** 知识域判定小结：新建域 / 兜底待复核 / 置信度 */
-function classifyNote(detail: any): string | null {
+function classifyNote(detail: KbClassifyDetail | null): string | null {
   if (!detail) return null;
   if (detail.note) return detail.note;
   if (detail.skipped) return `已定案：${detail.domain}`;
@@ -119,7 +127,7 @@ const JobDetailPage = () => {
     const es = new EventSource(jobEventsUrl(jobId));
     es.onmessage = (msg) => {
       try {
-        const event = JSON.parse(msg.data);
+        const event = JSON.parse(msg.data) as KbIngestEvent;
         if (event.type === 'progress' && event.stage === 'translate') {
           setTranslateTotal(event.total ?? 0);
           setTranslateDone(event.current ?? 0);
