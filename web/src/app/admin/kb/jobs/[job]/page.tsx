@@ -7,18 +7,54 @@ import Card from 'components/card';
 import Progress from 'components/progress';
 import JobStatusBadge from 'components/admin/kb/jobs/JobStatusBadge';
 import { KbError, KbLoading } from 'components/admin/kb/KbState';
-import { cancelJob, fetchJob, jobEventsUrl, retryJob } from 'lib/kb/ingest';
-import type { KbJobDetail } from 'types/ingest';
+import {
+  cancelJob,
+  domainLabel,
+  fetchJob,
+  jobEventsUrl,
+  retryJob,
+} from 'lib/kb/ingest';
+import type { KbJobDetail, KbJobStage } from 'types/ingest';
 
 const STAGE_LABELS: Record<string, string> = {
   parse: '解析分块',
   glossary: '术语表与摘要',
+  classify: '知识域判定',
   translate: '分块翻译',
   assemble: '拼装入库',
   layout: '保版式 PDF',
 };
 
-const STAGE_ORDER = ['parse', 'glossary', 'translate', 'assemble', 'layout'];
+const STAGE_ORDER = [
+  'parse',
+  'glossary',
+  'classify',
+  'translate',
+  'assemble',
+  'layout',
+];
+
+/** stage_done 载荷（classify 用于展示判定理由） */
+function stageDetail(stage: Pick<KbJobStage, 'detail'>): any {
+  try {
+    return stage.detail ? JSON.parse(stage.detail) : null;
+  } catch {
+    return null;
+  }
+}
+
+/** 知识域判定小结：新建域 / 兜底待复核 / 置信度 */
+function classifyNote(detail: any): string | null {
+  if (!detail) return null;
+  if (detail.note) return detail.note;
+  if (detail.skipped) return `已定案：${detail.domain}`;
+  const bits = [`归入 ${detail.domain}`];
+  if (detail.created) bits.push('新建域');
+  if (typeof detail.confidence === 'number')
+    bits.push(`置信度 ${detail.confidence}`);
+  if (detail.needs_review) bits.push('建议人工复核');
+  return bits.join(' · ');
+}
 
 function duration(s: {
   started_at: number | null;
@@ -114,7 +150,7 @@ const JobDetailPage = () => {
                 {job.filename}
               </h5>
               <p className="text-sm font-medium text-gray-600">
-                {job.domain} · {job.slug}
+                {domainLabel(job.domain)} · {job.slug}
               </p>
             </div>
             <JobStatusBadge status={job.status} />
@@ -128,9 +164,16 @@ const JobDetailPage = () => {
               >
                 <div className="flex items-center gap-3">
                   <JobStatusBadge status={stage.status} />
-                  <p className="text-base font-bold text-navy-700 dark:text-white">
-                    {STAGE_LABELS[stage.name] ?? stage.name}
-                  </p>
+                  <div>
+                    <p className="text-base font-bold text-navy-700 dark:text-white">
+                      {STAGE_LABELS[stage.name] ?? stage.name}
+                    </p>
+                    {stage.name === 'classify' ? (
+                      <p className="text-xs font-medium text-gray-600">
+                        {classifyNote(stageDetail(stage)) ?? ''}
+                      </p>
+                    ) : null}
+                  </div>
                 </div>
                 <div className="flex items-center gap-4">
                   {stage.name === 'translate' && totalChunks > 0 ? (

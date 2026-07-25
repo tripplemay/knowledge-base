@@ -128,6 +128,9 @@ def record_event(conn: sqlite3.Connection, job_id: str, event: dict) -> None:
             (job_id, event.get("idx", 0), event.get("model"),
              event.get("input", 0), event.get("output", 0)),
         )
+    elif etype == "domain_resolved" and event.get("domain"):
+        # classify 阶段定案：任务行的域从哨兵 __auto__ 换成真实域（任务中心实时可见）
+        conn.execute("UPDATE jobs SET domain=? WHERE id=?", (event["domain"], job_id))
     elif etype == "usage":
         conn.execute(
             "UPDATE jobs SET cost_usd = cost_usd + ? WHERE id=?",

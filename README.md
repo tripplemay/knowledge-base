@@ -2,16 +2,18 @@
 
 以纯 Markdown 文件为唯一事实源、由 Claude Code agents 驱动整理的个人知识库。
 
-- **设计方案**：`~/Doc/kb-design-proposal.md`（v0.2，2026-07-23 确认）
+- **设计方案**：`~/Doc/kb-design-proposal.md`（v0.4，2026-07-24 更新）
 - **Agent 操作规则**：[AGENTS.md](AGENTS.md)
-- **系统配置**：[_kb/config.yaml](_kb/config.yaml)（知识域注册、模型路由、翻译参数）
+- **系统配置**：[_kb/config.yaml](_kb/config.yaml)（模型路由、分类参数、翻译参数）
+- **知识域注册表**：[_kb/domains.yaml](_kb/domains.yaml)（机器托管，classify 阶段自动写入）
 
 ## 快速使用
 
 ```bash
-# 摄取一份新文档（解析→术语表→中文翻译→双语对照）
+# 摄取一份新文档（解析→术语表→域判定→中文翻译→双语对照）
 cd ~/project/KnowledgeBase
-_kb/.venv/bin/python _kb/scripts/ingest.py <文件.pdf> --domain ai-engineering
+_kb/.venv/bin/python _kb/scripts/ingest.py <文件.pdf>            # 域自动判定（未知领域自动建域）
+_kb/.venv/bin/python _kb/scripts/ingest.py <文件.pdf> --domain ai-engineering  # 或手动指定
 
 # PDF 追加生成保版式中文/双语 PDF（zh.pdf + dual.pdf）
 _kb/.venv/bin/python _kb/scripts/layout_translate.py domains/ai-engineering/sources/<文档目录>
@@ -26,7 +28,17 @@ _kb/.venv/bin/python _kb/scripts/layout_translate.py domains/ai-engineering/sour
 | `zh.md` | **中文全文** |
 | `bilingual.md` | 段落级双语对照（`<!-- blk:NNNN -->` 稳定块 ID，供溯源引用） |
 | `terms.csv` | 本文档术语表（BabelDOC 兼容格式） |
-| `meta.yaml` | 来源、sha256、模型、token 用量、成本、摘要 |
+| `meta.yaml` | 来源、sha256、模型、token 用量、成本、摘要、`domain_decision`（自动判定留痕） |
+
+## 知识域自动判定
+
+上传/摄取时不指定域，`classify` 阶段按文档内容归类；不属于任何已知域时自动创建新域。
+
+- **判定材料**：中文摘要 + 术语表 + 章节标题 + 正文开头（复用 glossary 产物，额外成本约 $0.001/篇）
+- **防近义域**：LLM 置信度门槛 → bge-m3 相似度闸门（≥ `similarity_floor` 并入既有域）→ `max_auto_domains` 上限
+- **兜底**：判定失败或超限的文档进 `uncategorized` 域并标记 `needs_review`，不静默归错
+- **参数**：`_kb/config.yaml` 的 `classification:` 段；新域自动写入 `_kb/domains.yaml`（`origin: auto`）
+- **复核**：任务详情页显示判定理由/置信度；`_kb/scripts/kb_health.py` 汇总空域与待复核项
 
 ## 路线图
 

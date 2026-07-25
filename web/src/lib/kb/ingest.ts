@@ -14,6 +14,14 @@ async function request<T>(path: string, init?: RequestInit): Promise<T> {
   return body.data as T;
 }
 
+/** job.yaml / jobs.domain 中的"待判定"哨兵（后端 pipeline.context.AUTO_DOMAIN） */
+export const AUTO_DOMAIN = '__auto__';
+
+/** 任务列表/详情的域展示：判定完成前显示占位文案 */
+export function domainLabel(domain: string): string {
+  return domain === AUTO_DOMAIN ? '判定中…' : domain;
+}
+
 export function uploadDocument(
   file: File,
   domain: string,
@@ -22,7 +30,7 @@ export function uploadDocument(
 ): Promise<{ id: string; sha256: string; size: number }> {
   const form = new FormData();
   form.append('file', file);
-  form.append('domain', domain);
+  form.append('domain', domain || 'auto'); // 空值 = 交给 classify 阶段自动判定
   if (slug) form.append('slug', slug);
   form.append('layout', String(layout));
   return request('/api/v1/jobs', { method: 'POST', body: form });

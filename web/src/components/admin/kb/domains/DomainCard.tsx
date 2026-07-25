@@ -4,8 +4,14 @@ import Card from 'components/card';
 import { MdOutlineLibraryBooks } from 'react-icons/md';
 import type { KbDomainInfo } from 'types/kb';
 
+const ORIGIN_BADGE: Record<string, { text: string; className: string }> = {
+  auto: { text: '自动创建', className: 'bg-brand-100 text-brand-500' },
+  system: { text: '待归类', className: 'bg-amber-100 text-amber-600' },
+};
+
 function DomainCard(props: { domain: KbDomainInfo }) {
   const { domain } = props;
+  const badge = ORIGIN_BADGE[domain.origin];
   return (
     <NavLink href={`/admin/kb/${domain.id}`}>
       <Card extra="flex flex-col w-full h-full !p-5 bg-white hover:cursor-pointer">
@@ -14,9 +20,18 @@ function DomainCard(props: { domain: KbDomainInfo }) {
             <MdOutlineLibraryBooks className="h-6 w-6" />
           </div>
           <div>
-            <h5 className="text-base font-bold text-navy-700 dark:text-white">
-              {domain.name}
-            </h5>
+            <div className="flex items-center gap-2">
+              <h5 className="text-base font-bold text-navy-700 dark:text-white">
+                {domain.name}
+              </h5>
+              {badge ? (
+                <span
+                  className={`rounded-full px-2 py-0.5 text-xs font-bold ${badge.className}`}
+                >
+                  {badge.text}
+                </span>
+              ) : null}
+            </div>
             <p className="text-sm font-medium text-gray-600">{domain.id}</p>
           </div>
         </div>

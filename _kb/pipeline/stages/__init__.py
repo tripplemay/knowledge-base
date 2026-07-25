@@ -1,9 +1,10 @@
 """Stage 注册表：有序阶段链。Phase 3/4（蒸馏/图谱同步/仲裁）以"后继 Job"挂接，不加长此链。"""
-from . import assemble, glossary, layout, pages, parse, translate
+from . import assemble, classify, glossary, layout, pages, parse, translate
 
 STAGES = [
     ("parse", parse.run),
     ("glossary", glossary.run),
+    ("classify", classify.run),  # 域判定早于最贵的 translate；用户指定域时自动跳过
     ("translate", translate.run),
     ("assemble", assemble.run),
     ("pages", pages.run),

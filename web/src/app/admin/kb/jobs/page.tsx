@@ -5,13 +5,15 @@ import NavLink from 'components/link/NavLink';
 import Card from 'components/card';
 import JobStatusBadge from 'components/admin/kb/jobs/JobStatusBadge';
 import { KbError, KbLoading } from 'components/admin/kb/KbState';
-import { fetchJobs } from 'lib/kb/ingest';
+import { domainLabel, fetchJobs } from 'lib/kb/ingest';
 import type { KbJobSummary } from 'types/ingest';
 
 const REFRESH_MS = 5000;
 
 function fmtTime(ts: number | null): string {
-  return ts ? new Date(ts * 1000).toLocaleString('zh-CN', { hour12: false }) : '—';
+  return ts
+    ? new Date(ts * 1000).toLocaleString('zh-CN', { hour12: false })
+    : '—';
 }
 
 const JobsPage = () => {
@@ -83,7 +85,7 @@ const JobsPage = () => {
                   </td>
                   <td className="py-3 pr-4">
                     <p className="text-sm font-bold text-navy-700 dark:text-white">
-                      {job.domain}
+                      {domainLabel(job.domain)}
                     </p>
                   </td>
                   <td className="py-3 pr-4">

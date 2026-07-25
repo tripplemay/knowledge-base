@@ -11,6 +11,9 @@ CONFIG_PATH = KB_ROOT / "_kb" / "config.yaml"
 ENV_PATH = KB_ROOT / "_kb" / ".env"
 WORK_ROOT = KB_ROOT / "_kb" / "work"
 
+#: job.yaml 中的"待判定"域哨兵值 —— 由 classify 阶段解析为真实域后回写。
+AUTO_DOMAIN = "__auto__"
+
 
 def load_env() -> dict[str, str]:
     env: dict[str, str] = {}
@@ -26,7 +29,15 @@ def load_env() -> dict[str, str]:
 
 
 def load_config() -> dict:
-    return yaml.safe_load(CONFIG_PATH.read_text())
+    """config.yaml + 机器托管的域注册表（domains.yaml）合并视图。
+
+    域注册表独立成文件后，所有读 config["domains"] 的旧代码无需改动。
+    """
+    from .registry import load_domains  # 局部导入：registry 不依赖 context，避免环
+
+    config = yaml.safe_load(CONFIG_PATH.read_text()) or {}
+    config["domains"] = load_domains() or config.get("domains") or {}
+    return config
 
 
 class JobContext:
@@ -49,8 +60,23 @@ class JobContext:
         self.date = spec["date"]
         self.config = load_config()
         self.env = load_env()
-        if self.domain not in self.config["domains"]:
+        if not self.domain_pending and self.domain not in self.config["domains"]:
             raise RuntimeError(f"未注册的知识域: {self.domain}")
+
+    @property
+    def domain_pending(self) -> bool:
+        """域待判定（上传时选了"自动判定"，classify 阶段尚未定案）。"""
+        return self.domain == AUTO_DOMAIN
+
+    def resolve_domain(self, domain: str) -> None:
+        """classify 定案：回写 job.yaml（原子）并刷新内存状态，供重试续跑复用。"""
+        spec = yaml.safe_load((self.job_dir / "job.yaml").read_text())
+        spec["domain"] = domain
+        tmp = self.job_dir / "job.yaml.tmp"
+        tmp.write_text(yaml.safe_dump(spec, allow_unicode=True))
+        tmp.replace(self.job_dir / "job.yaml")
+        self.domain = domain
+        self.config = load_config()
 
     @property
     def chunks_dir(self) -> Path:

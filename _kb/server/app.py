@@ -19,7 +19,7 @@ from fastapi import Depends, FastAPI, Form, Header, HTTPException, UploadFile
 from fastapi.middleware.cors import CORSMiddleware
 from sse_starlette.sse import EventSourceResponse
 
-from pipeline.context import create_job, load_config, load_env
+from pipeline.context import AUTO_DOMAIN, create_job, load_config, load_env
 from . import db
 from .tasks import run_ingest
 
@@ -49,11 +49,15 @@ def envelope(data=None, error: str | None = None) -> dict:
 
 
 @app.post("/api/v1/jobs", dependencies=[Depends(require_token)])
-async def create_ingest_job(file: UploadFile, domain: str = Form(...),
+async def create_ingest_job(file: UploadFile, domain: str = Form(default=""),
                             slug: str | None = Form(default=None),
                             layout: bool = Form(default=True)) -> dict:
+    """domain 留空或传 auto → 由 classify 阶段按文档内容判定（可自动建域）。"""
     config = load_config()
-    if domain not in config["domains"]:
+    domain = (domain or "").strip()
+    if domain in ("", "auto", AUTO_DOMAIN):
+        domain = AUTO_DOMAIN
+    elif domain not in config["domains"]:
         raise HTTPException(400, f"未注册的知识域: {domain}")
     suffix = Path(file.filename or "").suffix.lower()
     if suffix not in ALLOWED_EXT:

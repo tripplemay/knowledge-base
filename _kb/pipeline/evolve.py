@@ -15,6 +15,7 @@ from pathlib import Path
 import yaml
 
 from .context import KB_ROOT
+from .embed import cosine, embed_texts as embed_statements  # noqa: F401 — 保留旧名
 from .gateway import Gateway
 
 REVIEW_QUEUE = KB_ROOT / "forge" / "review-queue"
@@ -99,25 +100,6 @@ def extract_claims(doc_dir: Path, gw: Gateway, model: str,
         if progress_cb:
             progress_cb(idx + 1, len(pairs))
     return claims
-
-
-def embed_statements(texts: list[str], env: dict, model: str) -> list[list[float]]:
-    import requests
-    resp = requests.post(
-        f"{env['AIGC_GATEWAY_BASE_URL'].rstrip('/')}/embeddings",
-        headers={"Authorization": f"Bearer {env['AIGC_GATEWAY_API_KEY']}"},
-        json={"model": model, "input": texts, "encoding_format": "float"},
-        timeout=120,
-    )
-    resp.raise_for_status()
-    return [d["embedding"] for d in resp.json()["data"]]
-
-
-def cosine(a: list[float], b: list[float]) -> float:
-    dot = sum(x * y for x, y in zip(a, b))
-    na = sum(x * x for x in a) ** 0.5
-    nb = sum(x * x for x in b) ** 0.5
-    return dot / (na * nb + 1e-9)
 
 
 def arbitrate(domain: str, new_claims: list[dict], source_doc: str,

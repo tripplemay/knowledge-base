@@ -8,6 +8,7 @@ import type {
   KbDocSummary,
   KbDocVariant,
   KbDomainInfo,
+  KbDomainOrigin,
   KbPdfKind,
   KbSearchHit,
 } from 'types/kb';
@@ -15,6 +16,8 @@ import type {
 const KB_ROOT = process.env.KB_ROOT ?? path.resolve(process.cwd(), '..');
 const DOMAINS_DIR = path.join(KB_ROOT, 'domains');
 const CONFIG_PATH = path.join(KB_ROOT, '_kb', 'config.yaml');
+/** 域注册表（机器托管，classify 阶段写入）；缺失时回退旧布局 config.yaml */
+const REGISTRY_PATH = path.join(KB_ROOT, '_kb', 'domains.yaml');
 
 const VARIANT_FILES: Record<KbDocVariant, string> = {
   zh: 'zh.md',
@@ -93,17 +96,36 @@ function readDocSummary(domain: string, slug: string): KbDocSummary {
   };
 }
 
-export function listDomains(): KbDomainInfo[] {
-  const registry = (readYaml(CONFIG_PATH)?.domains ?? {}) as Record<
+type DomainRegistryEntry = {
+  name?: string;
+  description?: string;
+  origin?: KbDomainOrigin;
+  created_at?: string;
+};
+
+function readDomainRegistry(): Record<string, DomainRegistryEntry> {
+  if (fs.existsSync(REGISTRY_PATH)) {
+    return (readYaml(REGISTRY_PATH)?.domains ?? {}) as Record<
+      string,
+      DomainRegistryEntry
+    >;
+  }
+  return (readYaml(CONFIG_PATH)?.domains ?? {}) as Record<
     string,
-    { name?: string; description?: string }
+    DomainRegistryEntry
   >;
+}
+
+export function listDomains(): KbDomainInfo[] {
+  const registry = readDomainRegistry();
   return listDomainIds().map((id) => {
     const docs = listDocDirs(id).map((slug) => readDocSummary(id, slug));
     return {
       id,
       name: registry[id]?.name ?? id,
       description: registry[id]?.description ?? '',
+      origin: registry[id]?.origin ?? 'manual',
+      createdAt: registry[id]?.created_at ?? null,
       docCount: docs.length,
       totalCostUsd: Number(
         docs.reduce((sum, d) => sum + d.costUsd, 0).toFixed(4),

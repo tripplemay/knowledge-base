@@ -75,11 +75,14 @@ def run_ingest(job_id: str) -> None:
 
     proc.wait()
     (job_dir / "pid").unlink(missing_ok=True)
+    # 域可能被 classify 阶段改写（上传时选了自动判定），提交与派发前必须重读
+    job = db.get_job(conn, job_id) or job
 
     if proc.returncode == 0:
         db.set_job_status(conn, job_id, "done")
         # 磁盘纪律：成功即清 work 目录与上传暂存
-        _git_commit([f"domains/{job['domain']}"], f"ingest: {job['slug']}（web 上传）")
+        _git_commit(["_kb/domains.yaml", f"domains/{job['domain']}"],
+                    f"ingest: {job['slug']} → {job['domain']}（web 上传）")
         subprocess.run(["rm", "-rf", str(job_dir)], timeout=60)
         upload_dir = Path(job["source_path"]).parent
         if upload_dir.parent == KB_DIR / "uploads":

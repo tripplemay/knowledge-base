@@ -106,6 +106,15 @@ def run(ctx: JobContext, emit: Emitter) -> None:
         "cost_usd": cost_usd(usage, ctx.config.get("pricing", {})),
         "summary": glossary_data["summary"],
     }
+    classify_path = ctx.job_dir / "classify.json"
+    if classify_path.exists():  # 自动判定的归属留痕（人工选域时无此字段）
+        decision = json.loads(classify_path.read_text())
+        meta["domain_decision"] = {
+            k: decision[k]
+            for k in ("action", "created", "confidence", "similarity",
+                      "reason", "needs_review")
+            if k in decision
+        }
     (tmp_dir / "meta.yaml").write_text(
         yaml.safe_dump(meta, allow_unicode=True, sort_keys=False)
     )

@@ -1,9 +1,14 @@
 // 知识库共享类型（前后端统一）
 
+/** 域来源：人工创建 / classify 自动创建 / 系统兜底域 */
+export type KbDomainOrigin = 'manual' | 'auto' | 'system';
+
 export interface KbDomainInfo {
   id: string;
   name: string;
   description: string;
+  origin: KbDomainOrigin;
+  createdAt: string | null;
   docCount: number;
   totalCostUsd: number;
   lastIngestedAt: string | null;

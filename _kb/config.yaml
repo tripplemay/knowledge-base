@@ -3,13 +3,9 @@
 
 version: 0.1
 
-# 知识域注册表（需求3：目录级硬隔离）
-domains:
-  ai-engineering:
-    name: AI 工程
-    description: AI Agent、LLM 应用开发、上下文工程、Agentic Engineering
-    graph_group_id: ai-engineering      # Graphiti group_id（Phase 3 启用）
-    lightrag_workspace: ai-engineering  # LightRAG workspace（Phase 3 启用）
+# 知识域注册表（需求3：目录级硬隔离）已迁至 _kb/domains.yaml
+# —— 该文件由 classify 阶段自动写入，独立存放以免机器写入破坏本文件的注释。
+# load_config() 会把它合并进 config["domains"]，读取方无需改动。
 
 # 模型路由（走 aigc-gateway，OpenAI 兼容 API，凭证在 _kb/.env）
 models:
@@ -30,6 +26,16 @@ pricing:
 # 摄取服务（v0.3 服务化）
 service:
   api_port: 8794   # FastAPI 摄取服务端口（8787 被本机其他服务占用）
+
+# 知识域自动判定（classify 阶段：上传免选域，未知领域自动建域）
+classification:
+  enabled: true
+  model: qwen3.5-plus         # JSON 输出稳定且便宜（约 $0.001/篇）
+  match_threshold: 0.6        # LLM 置信度低于此值不认"匹配已知域"，转相似度闸门
+  similarity_floor: 0.72      # 新域提案与已知域的嵌入相似度超过此值 → 强制并入已知域（防近义域）
+  auto_create: true           # 关闭后未知领域一律进 fallback_domain
+  max_auto_domains: 20        # 自动创建的域数量软上限，超限后不再新建
+  fallback_domain: uncategorized   # 判定失败/超限时的兜底域（不存在时自动创建）
 
 # 翻译流水线参数
 translation:

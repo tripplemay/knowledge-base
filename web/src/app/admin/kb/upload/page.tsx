@@ -22,7 +22,7 @@ const UploadPage = () => {
   const [error, setError] = useState<string | null>(null);
 
   const submit = async () => {
-    if (!file || !domain) return;
+    if (!file) return;
     setSubmitting(true);
     setError(null);
     try {
@@ -51,13 +51,18 @@ const UploadPage = () => {
               onChange={(e) => setDomain(e.target.value)}
               className="mt-2 flex h-12 w-full items-center rounded-xl border border-gray-200 bg-white/0 p-3 text-sm text-navy-700 outline-none dark:!border-white/10 dark:text-white [&>option]:dark:bg-navy-800"
             >
-              <option value="">选择知识域…</option>
+              <option value="">🤖 自动判定（按内容归类，可自动新建域）</option>
               {(domains ?? []).map((d) => (
                 <option key={d.id} value={d.id}>
                   {d.name}（{d.id}）
                 </option>
               ))}
             </select>
+            <p className="ml-1.5 mt-1 text-xs font-medium text-gray-600">
+              {domain
+                ? '已手动指定知识域，跳过自动判定'
+                : '解析后由模型按文档内容归类；不属于任何已知域时自动创建新域'}
+            </p>
           </div>
           <InputField
             id="slug"
@@ -79,7 +84,7 @@ const UploadPage = () => {
         />
         <button
           onClick={submit}
-          disabled={!file || !domain || submitting}
+          disabled={!file || submitting}
           className="linear mt-5 rounded-xl bg-brand-500 px-5 py-3 text-base font-medium text-white transition duration-200 hover:bg-brand-600 active:bg-brand-700 disabled:opacity-50 dark:bg-brand-400 dark:text-white dark:hover:bg-brand-300 dark:active:bg-brand-200"
         >
           {submitting ? '上传中…' : '开始摄取'}
