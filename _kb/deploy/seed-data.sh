@@ -15,18 +15,20 @@ echo "→ 在 $TARGET 建立目录骨架"
 ssh "$TARGET" "mkdir -p '$REMOTE_DIR'/{domains,forge,state,engines,uploads,work,reports,secrets,kbdata.git}"
 
 echo "→ 同步语料与知识产物"
-rsync -az --delete --info=stats1 \
+# 不要用 --info=：macOS 自带 rsync 2.6.9 不支持它，会直接报用法错误退出
+# （若再管道接 head，退出码还会被吞掉，表现为"同步成功但目标目录是空的"）
+rsync -az --delete --partial --stats \
   "$KB_ROOT/domains/" "$TARGET:$REMOTE_DIR/domains/"
-[ -d "$KB_ROOT/forge" ] && rsync -az --delete "$KB_ROOT/forge/" "$TARGET:$REMOTE_DIR/forge/"
+[ -d "$KB_ROOT/forge" ] && rsync -az --delete --partial "$KB_ROOT/forge/" "$TARGET:$REMOTE_DIR/forge/"
 
 echo "→ 同步域注册表（容器内位于 state/domains.yaml）"
 rsync -az "$KB_ROOT/_kb/domains.yaml" "$TARGET:$REMOTE_DIR/state/domains.yaml"
 
 echo "→ 同步知识历史仓"
-rsync -az --delete "$KB_ROOT/.kbdata.git/" "$TARGET:$REMOTE_DIR/kbdata.git/"
+rsync -az --delete --partial "$KB_ROOT/.kbdata.git/" "$TARGET:$REMOTE_DIR/kbdata.git/"
 
 echo "→ 同步 LightRAG 引擎索引（可重建，但重建要花钱，直接搬更划算）"
-[ -d "$KB_ROOT/_kb/engines" ] && rsync -az --delete "$KB_ROOT/_kb/engines/" "$TARGET:$REMOTE_DIR/engines/"
+[ -d "$KB_ROOT/_kb/engines" ] && rsync -az --delete --partial "$KB_ROOT/_kb/engines/" "$TARGET:$REMOTE_DIR/engines/"
 
 cat <<EOF
 
