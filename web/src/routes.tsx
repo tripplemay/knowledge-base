@@ -39,6 +39,11 @@ const routes = [
         layout: '/admin',
         path: '/kb/jobs',
       },
+      {
+        name: '演化裁决',
+        layout: '/admin',
+        path: '/kb/review',
+      },
     ],
   },
 ];

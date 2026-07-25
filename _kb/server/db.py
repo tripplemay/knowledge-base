@@ -59,14 +59,19 @@ def connect() -> sqlite3.Connection:
     conn.row_factory = sqlite3.Row
     conn.execute("PRAGMA journal_mode=WAL")
     conn.executescript(SCHEMA)
+    try:  # v0.4: 任务类型（ingest | distill）
+        conn.execute("ALTER TABLE jobs ADD COLUMN kind TEXT NOT NULL DEFAULT 'ingest'")
+        conn.commit()
+    except sqlite3.OperationalError:
+        pass  # 列已存在
     return conn
 
 
 def insert_job(conn: sqlite3.Connection, job: dict) -> None:
     conn.execute(
-        "INSERT INTO jobs (id, domain, slug, filename, source_path, job_dir, status, created_at)"
-        " VALUES (:id, :domain, :slug, :filename, :source_path, :job_dir, 'queued', :now)",
-        {**job, "now": time.time()},
+        "INSERT INTO jobs (id, domain, slug, filename, source_path, job_dir, status, created_at, kind)"
+        " VALUES (:id, :domain, :slug, :filename, :source_path, :job_dir, 'queued', :now, :kind)",
+        {"kind": "ingest", **job, "now": time.time()},
     )
     conn.commit()
 
@@ -164,5 +169,5 @@ def get_job(conn: sqlite3.Connection, job_id: str) -> dict | None:
 
 def list_jobs(conn: sqlite3.Connection, limit: int = 50) -> list[dict]:
     return [dict(r) for r in conn.execute(
-        "SELECT id,domain,slug,filename,status,error,cost_usd,created_at,started_at,finished_at"
+        "SELECT id,domain,slug,filename,status,error,cost_usd,created_at,started_at,finished_at,kind"
         " FROM jobs ORDER BY created_at DESC LIMIT ?", (limit,))]

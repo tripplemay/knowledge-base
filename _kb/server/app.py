@@ -137,7 +137,11 @@ def retry_job(job_id: str) -> dict:
     if not Path(job["job_dir"]).exists():
         raise HTTPException(410, "工作目录已清理，请重新上传")
     db.set_job_status(conn, job_id, "queued")
-    run_ingest(job_id)
+    if job.get("kind") == "distill":
+        from .tasks import run_distill
+        run_distill(job_id)
+    else:
+        run_ingest(job_id)
     return envelope({"id": job_id, "status": "queued"})
 
 
@@ -159,6 +163,59 @@ async def kg_query(payload: dict) -> dict:
         raise HTTPException(400, "需要 domain 与至少 4 字符的 question")
     answer = await kg.semantic_query(domain, question)
     return envelope({"answer": answer})
+
+
+@app.get("/api/v1/review", dependencies=[Depends(require_token)])
+def review_list(status: str = "pending") -> dict:
+    import yaml
+    from pipeline.evolve import REVIEW_QUEUE
+    items = []
+    if REVIEW_QUEUE.exists():
+        for f in sorted(REVIEW_QUEUE.glob("*.yaml"), reverse=True):
+            item = yaml.safe_load(f.read_text())
+            if status in ("all", item.get("status")):
+                items.append(item)
+    return envelope(items)
+
+
+@app.post("/api/v1/review/{item_id}/{action}", dependencies=[Depends(require_token)])
+def review_act(item_id: str, action: str) -> dict:
+    import subprocess
+    import time as _time
+
+    import yaml
+    from pipeline.context import KB_ROOT
+    from pipeline.evolve import REVIEW_QUEUE, parse_frontmatter, write_claim
+
+    if action not in ("approve", "reject"):
+        raise HTTPException(400, "action ∈ approve|reject")
+    path = REVIEW_QUEUE / f"{item_id}.yaml"
+    if not path.exists():
+        raise HTTPException(404, "裁决项不存在")
+    item = yaml.safe_load(path.read_text())
+    if item["status"] != "pending":
+        raise HTTPException(400, f"已处理过: {item['status']}")
+
+    if action == "approve":
+        claims_dir = KB_ROOT / "domains" / item["domain"] / "claims"
+        old_path = claims_dir / f"{item['old_claim']}.md"
+        if old_path.exists():
+            meta, body = parse_frontmatter(old_path)
+            meta["invalid_at"] = _time.strftime("%Y-%m-%d")
+            meta["superseded_by"] = item["new_claim"]
+            write_claim(claims_dir, meta, body.strip())
+    item["status"] = "approved" if action == "approve" else "rejected"
+    item["decided_at"] = _time.strftime("%Y-%m-%dT%H:%M:%S")
+    path.write_text(yaml.safe_dump(item, allow_unicode=True, sort_keys=False))
+    subprocess.run(
+        ["git", "add", "domains", "forge/review-queue"], cwd=KB_ROOT,
+        capture_output=True, timeout=60,
+    )
+    subprocess.run(
+        ["git", "commit", "-q", "-m", f"review: {item_id} {item['status']}（{item['old_claim']}）"],
+        cwd=KB_ROOT, capture_output=True, timeout=60,
+    )
+    return envelope(item)
 
 
 @app.get("/api/v1/jobs/{job_id}/events", dependencies=[Depends(require_token)])

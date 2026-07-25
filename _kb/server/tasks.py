@@ -79,16 +79,83 @@ def run_ingest(job_id: str) -> None:
     if proc.returncode == 0:
         db.set_job_status(conn, job_id, "done")
         # 磁盘纪律：成功即清 work 目录与上传暂存
-        out_rel = f"domains/{job['domain']}/sources/{job_dir.name.rsplit('-', 1)[0]}"
         _git_commit([f"domains/{job['domain']}"], f"ingest: {job['slug']}（web 上传）")
         subprocess.run(["rm", "-rf", str(job_dir)], timeout=60)
         upload_dir = Path(job["source_path"]).parent
         if upload_dir.parent == KB_DIR / "uploads":
             subprocess.run(["rm", "-rf", str(upload_dir)], timeout=60)
+        # 后继 Job：知识演化（claim 抽取 + 仲裁），设计方案 v0.3 挂接模式
+        enqueue_distill(conn, job)
     else:
         stderr_tail = (proc.stderr.read() or "")[-500:]
         db.set_job_status(conn, job_id, "failed",
                           error=error_msg or stderr_tail or f"exit={proc.returncode}")
+
+
+def enqueue_distill(conn, ingest_job: dict) -> None:
+    doc_slug = None
+    doc_root = KB_ROOT / "domains" / ingest_job["domain"] / "sources"
+    for d in sorted(doc_root.iterdir(), reverse=True):
+        if d.name.endswith(ingest_job["slug"]):
+            doc_slug = d.name
+            break
+    if not doc_slug:
+        return
+    distill_id = f"distill-{ingest_job['id']}"
+    if conn.execute("SELECT 1 FROM jobs WHERE id=?", (distill_id,)).fetchone():
+        return
+    conn.execute(
+        "INSERT INTO jobs (id, domain, slug, filename, source_path, job_dir, status, created_at, kind)"
+        " VALUES (?,?,?,?,?,?,'queued',?, 'distill')",
+        (distill_id, ingest_job["domain"], doc_slug, ingest_job["filename"],
+         str(doc_root / doc_slug), str(doc_root / doc_slug), __import__("time").time()),
+    )
+    conn.commit()
+    run_distill(distill_id)
+
+
+@huey.task()
+def run_distill(job_id: str) -> None:
+    """演化 Job：claim 抽取 → 仲裁 → 应用/人审队列（in-worker，事件直写 DB）。"""
+    import sys as _sys
+    _sys.path.insert(0, str(KB_DIR))
+    from pipeline import evolve
+    from pipeline.context import load_config, load_env
+    from pipeline.gateway import Gateway
+
+    conn = db.connect()
+    job = db.get_job(conn, job_id)
+    if job is None or job["status"] == "canceled":
+        return
+    db.set_job_status(conn, job_id, "running")
+    config, env = load_config(), load_env()
+
+    def emit(stage: str, type_: str, **kw) -> None:
+        db.record_event(conn, job_id, {"stage": stage, "type": type_, **kw})
+
+    try:
+        emit("extract", "stage_start")
+        gw = Gateway(env, config.get("pricing", {}))
+        claims = evolve.extract_claims(
+            Path(job["job_dir"]), gw, config["models"]["arbitration"],
+            progress_cb=lambda c, t: emit("extract", "progress", current=c, total=t),
+        )
+        emit("extract", "stage_done", claims=len(claims))
+
+        emit("arbitrate", "stage_start")
+        stats = evolve.arbitrate(
+            job["domain"], claims, job["slug"], gw, config, env,
+            progress_cb=lambda c, t: emit("arbitrate", "progress", current=c, total=t),
+        )
+        emit("arbitrate", "stage_done", **stats)
+        conn.execute("UPDATE jobs SET cost_usd = ? WHERE id=?", (gw.cost_usd(), job_id))
+        _git_commit(
+            [f"domains/{job['domain']}/claims", "forge/review-queue"],
+            f"evolve: {job['slug']} 仲裁 +{stats['added']} ~{stats['updated']} ?{stats['queued']}",
+        )
+        db.set_job_status(conn, job_id, "done")
+    except Exception as err:  # noqa: BLE001
+        db.set_job_status(conn, job_id, "failed", error=str(err)[:500])
 
 
 def cleanup_on_boot() -> None:
