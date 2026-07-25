@@ -20,7 +20,7 @@ jobs:
     runs-on: ubuntu-latest
     environment: production # 可在仓库设置里给它加人工审批
     steps:
-      - name: 拉取代码、重建并滚动重启
+      - name: 拉取代码、重建并验收
         uses: appleboy/ssh-action@v1.2.0
         with:
           host: ${{ secrets.DEPLOY_HOST }}
@@ -28,47 +28,6 @@ jobs:
           key: ${{ secrets.DEPLOY_SSH_KEY }}
           port: ${{ secrets.DEPLOY_PORT || 22 }}
           command_timeout: 30m
-          script_stop: true
-          script: |
-            set -euo pipefail
-            cd "${{ secrets.DEPLOY_PATH }}"
-
-            # 记录当前版本，失败时可回滚
-            PREV=$(git rev-parse --short HEAD)
-            echo "当前版本 $PREV"
-
-            git fetch --quiet origin main
-            git reset --hard --quiet origin/main
-            NEXT=$(git rev-parse --short HEAD)
-            echo "目标版本 $NEXT"
-
-            # 在服务器上构建：镜像不进 registry，省掉一套凭证管理。
-            # 代价是占用服务器资源，若将来构建变重可改回 GHCR 推拉。
-            docker compose build
-            docker compose up -d --remove-orphans
-            docker image prune -f
-
-            # 就地验收：页面可访问 + 代理通 + 跨站被拒
-            PORT=$(grep -E '^KB_WEB_PORT=' .env | cut -d= -f2 || echo 3456)
-            code=000
-            for i in $(seq 1 40); do
-              code=$(curl -s -o /dev/null -w '%{http_code}' "http://127.0.0.1:${PORT}/admin/kb/domains" || true)
-              [ "$code" = "200" ] && break
-              sleep 3
-            done
-            if [ "$code" != "200" ]; then
-              echo "❌ web 未就绪（$code），回滚到 $PREV"
-              docker compose logs --tail=60
-              git reset --hard --quiet "$PREV"
-              docker compose build && docker compose up -d
-              exit 1
-            fi
-
-            proxy=$(curl -s -o /dev/null -w '%{http_code}' "http://127.0.0.1:${PORT}/api/v1/jobs")
-            [ "$proxy" = "200" ] || { echo "❌ 摄取代理异常（$proxy）"; docker compose logs --tail=60 api; exit 1; }
-
-            cross=$(curl -s -o /dev/null -w '%{http_code}' -H 'Sec-Fetch-Site: cross-site' \
-                    "http://127.0.0.1:${PORT}/api/v1/jobs")
-            [ "$cross" = "403" ] || { echo "❌ 跨站防护失效（$cross）"; exit 1; }
-
-            echo "✅ 部署完成：$PREV → $NEXT"
+          # 部署逻辑在仓库里（_kb/deploy/remote-deploy.sh），这里只发一行命令：
+          # 多行脚本经 ssh-action 传输容易被 shell 解析规则绊住，且无法在服务器上单独调试
+          script: DEPLOY_DIR='${{ secrets.DEPLOY_PATH }}' bash '${{ secrets.DEPLOY_PATH }}/_kb/deploy/remote-deploy.sh'
