@@ -131,7 +131,21 @@ cd /srv/kb && git reset --hard <旧sha> && docker compose build && docker compos
 
 数据不随代码回滚（语料是唯一事实源，只进不退）。
 
-## 五、备份
+## 五、单写入端原则（重要）
+
+摄取成功后 worker 会往数据仓写知识提交。**同一份知识只能有一个写入端**，
+否则本机与服务器各写各的 `.kbdata.git`，历史会分叉且无法自动合并。
+
+当前约定：**只用线上（doc.vpanel.cc）**。本机的 launchd 服务已卸载：
+
+```bash
+_kb/deploy/install-launchd.sh uninstall   # 停掉本机 api/worker/health
+```
+
+本机仅作开发与备份源。若要切回本机为主，先停服务器容器（`docker compose down`），
+再装回 launchd，并把服务器的数据仓同步回来。
+
+## 六、备份
 
 真正不可再生的是 `domains/` 与 `kbdata.git/`（`engines/` 可重建，但要花钱重跑嵌入）：
 
@@ -140,7 +154,7 @@ cd /srv/kb && git reset --hard <旧sha> && docker compose build && docker compos
 tar -czf /backup/kb-$(date +%F).tar.gz -C /srv/kb-data domains forge kbdata.git state/domains.yaml
 ```
 
-## 六、已知限制
+## 七、已知限制
 
 - **macOS 本地跑 compose**：`KB_DATA_DIR` 不能放在 `/tmp`（Docker Desktop 的文件共享
   不覆盖 `/private/tmp`，挂载会静默为空目录）。放 `$HOME` 下即可。
