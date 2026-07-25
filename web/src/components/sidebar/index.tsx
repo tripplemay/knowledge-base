@@ -66,7 +66,7 @@ function SidebarHorizon(props: { routes: IRoute[]; [x: string]: any }) {
                       : 'hidden'
                   }`}
                 >
-                  Horizon <span className="font-medium">PRO</span>
+                  知识库
                 </div>
                 <div
                   className={`ml-1 mt-1 h-2.5 font-poppins text-[26px] font-bold uppercase text-navy-700 dark:text-white ${
@@ -77,7 +77,7 @@ function SidebarHorizon(props: { routes: IRoute[]; [x: string]: any }) {
                       : 'block'
                   }`}
                 >
-                  H
+                  知
                 </div>
               </div>
               <div className="mb-7 mt-[58px] h-px bg-gray-200 dark:bg-white/10" />

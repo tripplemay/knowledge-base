@@ -18,7 +18,6 @@ import DefaultSidebar from '/public/img/layout/DefaultSidebar.png';
 import DefaultSidebarDark from '/public/img/layout/DefaultSidebarDark.png';
 import MiniSidebar from '/public/img/layout/MiniSidebar.png';
 import MiniSidebarDark from '/public/img/layout/MiniSidebarDark.png';
-import ConfiguratorLogo from '/public/img/layout/ConfiguratorLogo.png';
 import Image from 'next/image';
 // Assets
 import {
@@ -234,23 +233,12 @@ export default function HeaderLinks(props: { [x: string]: any }) {
             </div>
             <DrawerCloseButton className="absolute right-[26px] top-[16px] h-4 w-4 text-gray-900 dark:text-white" />
             <div className="flex items-center">
-              <div className="relative mr-5 flex h-12 w-12 rounded-full bg-gradient-to-b from-brand-400 to-brand-600">
-                <Image
-                  fill
-                  style={{ objectFit: 'contain' }}
-                  alt=""
-                  src={ConfiguratorLogo}
-                />
-              </div>
               <div>
                 <p className="text-xl font-bold text-gray-900 dark:text-white">
-                  Configurator
+                  外观设置
                 </p>
                 <p className="text-md flex font-medium text-gray-600">
-                  Horizon UI PRO TS
-                  <span className="ml-1.5 flex items-center rounded-3xl bg-brand-50 px-2 text-sm font-semibold text-brand-500 dark:bg-white/10 dark:text-white">
-                    v2.0.0
-                  </span>
+                  主题色 · 明暗 · 侧栏形态
                 </p>
               </div>
             </div>

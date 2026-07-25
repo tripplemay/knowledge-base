@@ -1,6 +1,6 @@
 {
-  "short_name": "React App",
-  "name": "Create React App Sample",
+  "short_name": "知识库",
+  "name": "个人 AI-native 知识库",
   "icons": [
     {
       "src": "favicon.ico",
@@ -8,8 +8,8 @@
       "type": "image/x-icon"
     }
   ],
-  "start_url": ".",
+  "start_url": "/admin/kb/domains",
   "display": "standalone",
-  "theme_color": "#000000",
+  "theme_color": "#4318FF",
   "background_color": "#ffffff"
 }
