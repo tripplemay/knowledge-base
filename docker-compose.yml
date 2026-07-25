@@ -1,0 +1,84 @@
+# 三进程编排：web（Next）+ api（FastAPI）+ worker（Huey）
+#
+# 数据不进镜像：语料、引擎索引、任务库全部挂在 ${KB_DATA_DIR} 下的宿主目录，
+# 容器无状态、可随时重建。首次部署见 DEPLOY.md 的"数据播种"。
+#
+# 端口：只有 web 对外暴露；api 仅在 compose 内网可达，浏览器经 web 的
+# /api/v1 同源代理访问（代理会注入 KB_API_TOKEN）。
+
+# 容器内跑什么身份：默认镜像里的 10001，也可设成宿主数据目录的属主
+# （否则容器写不了挂载卷，表现为 SQLite "unable to open database file"）
+x-run-as: &run-as ${KB_UID:-10001}:${KB_GID:-10001}
+
+x-backend-env: &backend-env
+  KB_REGISTRY: /kb/state/domains.yaml
+  KB_TASKS_DB: /kb/state/tasks.db
+  KB_HUEY_DB: /kb/state/huey.db
+  PYTHONUNBUFFERED: "1"
+
+# 语料与运行态数据的挂载点（api 与 worker 完全一致：worker 要写、api 要读）
+x-backend-volumes: &backend-volumes
+  - ${KB_DATA_DIR:?请在 .env 中设置 KB_DATA_DIR}/domains:/kb/domains
+  - ${KB_DATA_DIR}/forge:/kb/forge
+  - ${KB_DATA_DIR}/kbdata.git:/kb/.kbdata.git
+  - ${KB_DATA_DIR}/state:/kb/state
+  - ${KB_DATA_DIR}/engines:/kb/_kb/engines
+  - ${KB_DATA_DIR}/uploads:/kb/_kb/uploads
+  - ${KB_DATA_DIR}/work:/kb/_kb/work
+  - ${KB_DATA_DIR}/reports:/kb/_kb/reports
+  - ${KB_DATA_DIR}/secrets/kb.env:/kb/_kb/.env:ro
+
+services:
+  api:
+    build:
+      context: ./_kb
+    image: ${KB_IMAGE_API:-kb-api:local}
+    restart: unless-stopped
+    user: *run-as
+    environment: *backend-env
+    volumes: *backend-volumes
+    expose:
+      - "8794"
+    healthcheck:
+      # /api/v1/jobs 需要 token；用 openapi 探活（未加鉴权，且不触碰业务状态）
+      test: ["CMD", "python", "-c", "import urllib.request,sys; sys.exit(0 if urllib.request.urlopen('http://127.0.0.1:8794/openapi.json', timeout=5).status==200 else 1)"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 20s
+
+  worker:
+    build:
+      context: ./_kb
+    image: ${KB_IMAGE_API:-kb-api:local}
+    restart: unless-stopped
+    # -w 1：流水线本身已把重活放在子进程，单 worker 顺序执行即可（与本机 launchd 一致）
+    user: *run-as
+    command: ["huey_consumer", "server.tasks.huey", "-w", "1", "-k", "thread"]
+    environment: *backend-env
+    volumes: *backend-volumes
+    depends_on:
+      - api
+
+  web:
+    build:
+      context: ./web
+    image: ${KB_IMAGE_WEB:-kb-web:local}
+    restart: unless-stopped
+    user: *run-as
+    environment:
+      KB_ROOT: /kb
+      KB_REGISTRY: /kb/state/domains.yaml
+      # 同源代理的上游：走 compose 内网服务名，不经公网
+      INGEST_API_URL: http://api:8794
+      KB_API_TOKEN: ${KB_API_TOKEN:?请在 .env 中设置 KB_API_TOKEN（须与后端一致）}
+      NODE_ENV: production
+    volumes:
+      # 读侧是 RSC 直读文件系统，只需只读挂载
+      - ${KB_DATA_DIR}/domains:/kb/domains:ro
+      - ${KB_DATA_DIR}/state:/kb/state:ro
+      - ./_kb/config.yaml:/kb/_kb/config.yaml:ro
+    ports:
+      - "${KB_WEB_PORT:-3456}:3456"
+    depends_on:
+      - api

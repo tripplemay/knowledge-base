@@ -17,9 +17,20 @@ from . import db
 
 KB_ROOT = Path(__file__).resolve().parents[2]
 KB_DIR = KB_ROOT / "_kb"
-PYTHON = KB_DIR / ".venv" / "bin" / "python"
 
-huey = SqliteHuey(filename=str(KB_DIR / "huey.db"))
+# 流水线跑在子进程里，需要一个解释器路径：本机开发用 venv，容器里没有 venv
+# （依赖装在系统 site-packages），退回当前解释器即可。KB_PYTHON 可显式覆盖。
+def _resolve_python() -> Path:
+    override = os.environ.get("KB_PYTHON")
+    if override:
+        return Path(override)
+    venv_python = KB_DIR / ".venv" / "bin" / "python"
+    return venv_python if venv_python.exists() else Path(sys.executable)
+
+
+PYTHON = _resolve_python()
+
+huey = SqliteHuey(filename=os.environ.get("KB_HUEY_DB") or str(KB_DIR / "huey.db"))
 
 
 def _git_commit(paths: list[str], message: str) -> None:
@@ -37,11 +48,17 @@ def run_ingest(job_id: str) -> None:
     job_dir = Path(job["job_dir"])
 
     # detached 进程组 + pid 落盘（取消/清扫按进程组 kill）
-    proc = subprocess.Popen(
-        [str(PYTHON), "-m", "pipeline.run", "--job-dir", str(job_dir)],
-        cwd=KB_DIR, stdout=subprocess.PIPE, stderr=subprocess.PIPE,
-        text=True, start_new_session=True,
-    )
+    try:
+        proc = subprocess.Popen(
+            [str(PYTHON), "-m", "pipeline.run", "--job-dir", str(job_dir)],
+            cwd=KB_DIR, stdout=subprocess.PIPE, stderr=subprocess.PIPE,
+            text=True, start_new_session=True,
+        )
+    except OSError as err:
+        # 拉不起子进程（解释器路径错、权限不足…）时必须落终态，
+        # 否则任务永远停在 queued，界面上看不出任何异常
+        db.set_job_status(conn, job_id, "failed", error=f"无法启动流水线进程: {err}")
+        return
     (job_dir / "pid").write_text(str(proc.pid))
     db.set_job_status(conn, job_id, "running", pid=proc.pid)
 

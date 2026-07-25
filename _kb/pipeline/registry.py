@@ -17,8 +17,10 @@ from pathlib import Path
 import yaml
 
 KB_ROOT = Path(__file__).resolve().parents[2]
-REGISTRY_PATH = KB_ROOT / "_kb" / "domains.yaml"
-LOCK_PATH = KB_ROOT / "_kb" / "domains.yaml.lock"
+# 容器部署时指到挂载卷内：写入走 tmp + rename，跨挂载点会 EXDEV，
+# 因此注册表必须与它的 .tmp/.lock 同处一个可写目录（只挂目录、不挂单文件）
+REGISTRY_PATH = Path(os.environ.get("KB_REGISTRY") or KB_ROOT / "_kb" / "domains.yaml")
+LOCK_PATH = REGISTRY_PATH.with_name(REGISTRY_PATH.name + ".lock")
 DOMAINS_DIR = KB_ROOT / "domains"
 
 DOMAIN_ID_RE = re.compile(r"^[a-z][a-z0-9-]{1,31}$")
@@ -96,7 +98,8 @@ def load_domains() -> dict:
 
 def _write_registry(data: dict) -> None:
     """临时文件 + rename 原子落盘（必须在 _locked() 内调用）。"""
-    tmp = REGISTRY_PATH.with_suffix(".yaml.tmp")
+    # 与注册表同目录，保证 rename 是同一文件系统内的原子替换
+    tmp = REGISTRY_PATH.with_name(REGISTRY_PATH.name + ".tmp")
     tmp.write_text(
         "# 知识域注册表（机器托管：_kb/pipeline/registry.py 独占写入）\n"
         "# 人工维护的模型路由/价格/翻译参数在 _kb/config.yaml。\n\n"

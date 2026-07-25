@@ -19,8 +19,12 @@ import type {
 const KB_ROOT = process.env.KB_ROOT ?? path.resolve(process.cwd(), '..');
 const DOMAINS_DIR = path.join(KB_ROOT, 'domains');
 const CONFIG_PATH = path.join(KB_ROOT, '_kb', 'config.yaml');
-/** 域注册表（机器托管，classify 阶段写入）；缺失时回退旧布局 config.yaml */
-const REGISTRY_PATH = path.join(KB_ROOT, '_kb', 'domains.yaml');
+/**
+ * 域注册表（机器托管，classify 阶段写入）；缺失时回退旧布局 config.yaml。
+ * 容器部署时用 KB_REGISTRY 指到挂载卷内，须与后端 pipeline/registry.py 同值。
+ */
+const REGISTRY_PATH =
+  process.env.KB_REGISTRY ?? path.join(KB_ROOT, '_kb', 'domains.yaml');
 
 const VARIANT_FILES: Record<KbDocVariant, string> = {
   zh: 'zh.md',

@@ -2,11 +2,16 @@
 from __future__ import annotations
 
 import json
+import os
 import sqlite3
 import time
 from pathlib import Path
 
-DB_PATH = Path(__file__).resolve().parents[1] / "tasks.db"
+# 容器部署时指到挂载卷内的目录：SQLite 的 -wal/-shm 边车文件必须与主库同目录，
+# 因此只能整目录挂载，不能 bind-mount 单个 .db 文件
+DB_PATH = Path(
+    os.environ.get("KB_TASKS_DB") or Path(__file__).resolve().parents[1] / "tasks.db"
+)
 
 SCHEMA = """
 CREATE TABLE IF NOT EXISTS jobs (

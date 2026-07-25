@@ -1,0 +1,98 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+# 同一分支的旧运行自动取消，避免连续推送时排队
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  web:
+    name: 前端（类型 / 构建 / lint）
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: web
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: yarn
+          cache-dependency-path: web/yarn.lock
+
+      - name: 安装依赖
+        run: yarn install --frozen-lockfile
+
+      - name: 类型检查（全量）
+        run: npx tsc --noEmit
+
+      - name: 类型检查（KB 代码严格模式）
+        # 主 tsconfig 因模板遗留无法全开 strict；KB 自有代码单独设闸门
+        run: npx tsc -p tsconfig.strict.json --noEmit
+
+      - name: Lint
+        run: npx next lint
+
+      - name: 生产构建
+        # 构建期不读语料（读侧是 force-dynamic），无需数据卷
+        run: yarn build
+
+  api:
+    name: 后端（pytest）
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: _kb
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+          cache: pip
+          cache-dependency-path: _kb/requirements.lock.txt
+
+      - name: 安装依赖
+        run: |
+          pip install -r requirements.lock.txt
+          pip install -r requirements-dev.txt
+
+      - name: 单元测试
+        # 测试全部离线：注册表与域目录重定向到 tmp，不触碰真实语料、不打网关
+        run: python -m pytest tests -q
+
+  images:
+    name: 镜像构建冒烟
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: docker/setup-buildx-action@v3
+
+      - name: 构建后端镜像
+        uses: docker/build-push-action@v6
+        with:
+          context: ./_kb
+          push: false
+          cache-from: type=gha,scope=api
+          cache-to: type=gha,mode=max,scope=api
+
+      - name: 构建前端镜像
+        uses: docker/build-push-action@v6
+        with:
+          context: ./web
+          push: false
+          cache-from: type=gha,scope=web
+          cache-to: type=gha,mode=max,scope=web
+
+      - name: 校验 compose 配置
+        env:
+          KB_DATA_DIR: /tmp/kb-data
+          KB_API_TOKEN: dummy-for-config-check
+        run: docker compose config --quiet

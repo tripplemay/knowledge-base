@@ -34,3 +34,6 @@ web/out/
 # 工具与系统
 .pytest_cache/
 .DS_Store
+
+# compose 部署参数
+/.env
