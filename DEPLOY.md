@@ -103,7 +103,7 @@ SSE 无需额外配置（代理已设 `Cache-Control: no-transform` 阻止压缩
 | 工作流 | 触发 | 内容 |
 |---|---|---|
 | `.github/workflows/ci.yml` | push / PR | 前端 tsc、KB 代码严格 tsc、eslint、`next build`；后端 pytest；两个镜像构建冒烟 + compose 校验 |
-| `.github/workflows/deploy.yml` | CI 在 main 成功后 / 手动 | 构建并推 GHCR（同时打 `latest` 与短 SHA）→ SSH 到服务器 `docker compose pull && up -d` → 就地验收三项 |
+| `.github/workflows/deploy.yml` | CI 在 main 成功后 / 手动 | SSH 到服务器 `git reset --hard origin/main` → `docker compose build && up -d` → 就地验收三项；失败自动回滚到上一个提交 |
 
 部署后的就地验收会检查：web 返回 200、摄取代理返回 200、跨站请求返回 403。任一失败即
 `exit 1` 并打印容器日志。
@@ -113,22 +113,23 @@ SSE 无需额外配置（代理已设 `Cache-Control: no-transform` 阻止压缩
 | 名称 | 用途 |
 |---|---|
 | `DEPLOY_HOST` / `DEPLOY_USER` / `DEPLOY_SSH_KEY` / `DEPLOY_PORT` | SSH 到服务器 |
-| `DEPLOY_PATH` | 服务器上放 `docker-compose.yml` 的目录 |
-| `GHCR_TOKEN` | 服务器拉 GHCR 私有镜像用的 PAT（`read:packages`） |
+| `DEPLOY_PATH` | 服务器上的代码检出目录（如 `/srv/kb`） |
+
+> 镜像在服务器上就地构建，不经 registry —— 省掉一套凭证管理。
+> 若将来构建变重、想改回 GHCR 推拉，需要 `write:packages` 的 PAT 并把包设为公开。
 
 > `deploy.yml` 用了 `environment: production`，可在仓库设置里给它加人工审批，
 > 让每次上线都需要点一下确认。
 
 ### 回滚
 
-镜像同时打了短 SHA 标签，回滚就是指定旧标签重启：
+部署脚本在验收失败时会自动 `git reset` 回上一个提交并重建。手动回滚：
 
 ```bash
-KB_IMAGE_WEB=ghcr.io/<owner>/kb-web:<旧sha> \
-KB_IMAGE_API=ghcr.io/<owner>/kb-api:<旧sha> docker compose up -d
+cd /srv/kb && git reset --hard <旧sha> && docker compose build && docker compose up -d
 ```
 
-数据不随镜像回滚（语料是唯一事实源，只进不退）。
+数据不随代码回滚（语料是唯一事实源，只进不退）。
 
 ## 五、备份
 
